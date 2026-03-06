@@ -1,0 +1,13 @@
+<?php
+/**
+ * Скопируйте в database.production.php и укажите данные БД для продакшена.
+ * Файл database.production.php не должен попадать в git (добавьте в .gitignore).
+ */
+return [
+    'host'     => 'localhost',
+    'port'     => '3306',
+    'database' => 'inwork',
+    'username' => 'ваш_пользователь',
+    'password' => 'ваш_пароль',
+    'charset'  => 'utf8mb4',
+];
