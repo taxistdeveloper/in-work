@@ -7,6 +7,9 @@ define('APP_PATH', ROOT_PATH . '/app');
 define('VIEW_PATH', ROOT_PATH . '/views');
 
 $appConfig = require ROOT_PATH . '/config/app.php';
+if (file_exists(ROOT_PATH . '/config/app.production.php')) {
+    $appConfig = array_merge($appConfig, require ROOT_PATH . '/config/app.production.php');
+}
 define('ASSET_PATH', ($appConfig['base_path'] ?? '') !== '' ? dirname($appConfig['base_path']) . '/assets' : '/assets');
 define('APP_NAME', $appConfig['name']);
 define('APP_URL', $appConfig['url']);

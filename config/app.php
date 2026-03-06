@@ -1,11 +1,20 @@
 <?php
 
-$isProduction = (($_SERVER['HTTP_HOST'] ?? '') === 'in-work.krg-ktsk.kz');
+$host = $_SERVER['HTTP_HOST'] ?? '';
+$isProduction = ($host === 'in-work.krg-ktsk.kz')
+    || (str_contains($host, 'in-work') && str_contains($host, 'krg-ktsk.kz'));
+
+// Явная настройка для продакшена (раскомментируйте на сервере, если автоопределение не сработало)
+// 'production_url' => 'https://in-work.krg-ktsk.kz',
+// 'production_base_path' => '',
+
+$prodUrl = 'https://in-work.krg-ktsk.kz';  // ТОЧКА, не @
+$prodBasePath = '';
 
 return [
     'name'            => 'inWork',
-    'url'             => $isProduction ? 'https://in-work.krg-ktsk.kz' : 'http://localhost/in-work/public',
-    'base_path'       => $isProduction ? '' : '/in-work/public',  // пусто = DocumentRoot = public
+    'url'             => $isProduction ? $prodUrl : 'http://localhost/in-work/public',
+    'base_path'       => $isProduction ? $prodBasePath : '/in-work/public',
     'debug'           => !$isProduction,
     'timezone'        => 'Asia/Almaty',
     'platform_fee'    => 0.10, // 10% комиссия
