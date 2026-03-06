@@ -12,7 +12,11 @@ if (file_exists(ROOT_PATH . '/config/app.production.php')) {
 }
 define('ASSET_PATH', ($appConfig['base_path'] ?? '') !== '' ? dirname($appConfig['base_path']) . '/assets' : '/assets');
 define('APP_NAME', $appConfig['name']);
-define('APP_URL', $appConfig['url']);
+$appUrl = $appConfig['url'];
+// Исправление: в домене @ → . (in-work@krg → in-work.krg), убрать /public из URL
+$appUrl = preg_replace('#in-work@#', 'in-work.', $appUrl);
+$appUrl = preg_replace('#/public/?$#', '', $appUrl);
+define('APP_URL', rtrim($appUrl, '/'));
 define('PLATFORM_FEE', $appConfig['platform_fee']);
 
 if ($appConfig['debug']) {
