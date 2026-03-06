@@ -2,7 +2,8 @@
 
 return [
     'name'            => 'inWork',
-    'url'             => 'http://localhost/projects/inwork/public',
+    'url'             => 'http://localhost/in-work/public',
+    'base_path'       => '/in-work/public',  // путь до public в URL (для маршрутизации)
     'debug'           => true,
     'timezone'        => 'Asia/Almaty',
     'platform_fee'    => 0.10, // 10% комиссия

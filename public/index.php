@@ -5,9 +5,9 @@ session_start();
 define('ROOT_PATH', dirname(__DIR__));
 define('APP_PATH', ROOT_PATH . '/app');
 define('VIEW_PATH', ROOT_PATH . '/views');
-define('ASSET_PATH', '/projects/inwork/assets');
 
 $appConfig = require ROOT_PATH . '/config/app.php';
+define('ASSET_PATH', ($appConfig['base_path'] ?? '') ? dirname($appConfig['base_path']) . '/assets' : '/in-work/assets');
 define('APP_NAME', $appConfig['name']);
 define('APP_URL', $appConfig['url']);
 define('PLATFORM_FEE', $appConfig['platform_fee']);
@@ -50,7 +50,7 @@ require ROOT_PATH . '/config/routes.php';
 $method = $_SERVER['REQUEST_METHOD'];
 $uri = $_SERVER['REQUEST_URI'];
 
-$basePath = '/projects/inwork/public';
+$basePath = $appConfig['base_path'] ?? '/in-work/public';
 $uri = substr($uri, strlen($basePath)) ?: '/';
 
 $router->resolve($method, $uri);
