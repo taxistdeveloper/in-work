@@ -37,7 +37,7 @@ spl_autoload_register(function (string $class) {
     ];
 
     foreach ($map as $prefix => $baseDir) {
-        if (str_starts_with($class, $prefix)) {
+        if (strpos($class, $prefix) === 0) {
             $relativeClass = substr($class, strlen($prefix));
             $file = $baseDir . str_replace('\\', '/', $relativeClass) . '.php';
             if (file_exists($file)) {

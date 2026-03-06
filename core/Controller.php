@@ -18,7 +18,7 @@ abstract class Controller
         require $viewPath;
         $content = ob_get_clean();
 
-        if (str_starts_with($view, 'admin.')) {
+        if (strpos($view, 'admin.') === 0) {
             $layoutPath = __DIR__ . '/../views/admin/layout.php';
         } else {
             $layoutPath = __DIR__ . '/../views/layouts/app.php';

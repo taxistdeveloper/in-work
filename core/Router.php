@@ -114,6 +114,6 @@ class Router
 
     private function isApiRequest(): bool
     {
-        return str_starts_with($_SERVER['REQUEST_URI'] ?? '', '/api/');
+        return strpos($_SERVER['REQUEST_URI'] ?? '', '/api/') === 0;
     }
 }

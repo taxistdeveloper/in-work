@@ -2,7 +2,7 @@
 
 $host = $_SERVER['HTTP_HOST'] ?? '';
 $isProduction = ($host === 'in-work.krg-ktsk.kz')
-    || (str_contains($host, 'in-work') && str_contains($host, 'krg-ktsk.kz'));
+    || (strpos($host, 'in-work') !== false && strpos($host, 'krg-ktsk.kz') !== false);
 
 // Явная настройка для продакшена (раскомментируйте на сервере, если автоопределение не сработало)
 // 'production_url' => 'https://in-work.krg-ktsk.kz',
