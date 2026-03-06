@@ -1,4 +1,7 @@
 <?php
+// Временно: показ ошибок для отладки 500. Удалить после исправления!
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
 session_start();
 
