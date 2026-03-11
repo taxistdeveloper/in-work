@@ -32,6 +32,8 @@ CREATE TABLE orders (
     final_price DECIMAL(12,2) DEFAULT NULL,
     deadline DATE NOT NULL,
     status ENUM('open', 'in_progress', 'completed', 'cancelled', 'dispute') NOT NULL DEFAULT 'open',
+    delivered_at TIMESTAMP NULL DEFAULT NULL,
+    delivery_message TEXT DEFAULT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE,

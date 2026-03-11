@@ -1,21 +1,15 @@
-// User dropdown menu
-function toggleUserMenu() {
-    const dropdown = document.getElementById('userDropdown');
-    dropdown.classList.toggle('hidden');
-}
-
 // Mobile menu
 function toggleMobileMenu() {
     const menu = document.getElementById('mobileMenu');
     menu.classList.toggle('hidden');
 }
 
-// Close dropdowns when clicking outside
+// Close user dropdown (details) when clicking outside
 document.addEventListener('click', (e) => {
     const userMenu = document.getElementById('userMenu');
-    const dropdown = document.getElementById('userDropdown');
-    if (userMenu && dropdown && !userMenu.contains(e.target)) {
-        dropdown.classList.add('hidden');
+    const details = userMenu && userMenu.querySelector('details');
+    if (userMenu && details && !userMenu.contains(e.target)) {
+        details.removeAttribute('open');
     }
 });
 

@@ -71,7 +71,7 @@ class BidController extends Controller
         $notifModel = new Notification();
         $notifModel->notify(
             (int) $order['client_id'], 'new_bid',
-            "{$user['name']} предложил " . format_money($amount) . " за \"{$order['title']}\"",
+            "Пришёл отклик от {$user['name']}: " . format_money($amount) . " за «{$order['title']}»",
             "/orders/{$orderId}"
         );
 

@@ -107,7 +107,7 @@ class OrderController extends Controller
 
         $bidModel = new Bid();
         $bids = $bidModel->getOrderBids((int) $id);
-        $userBid = is_logged_in() ? $bidModel->hasUserBid((int) $id, user_id()) : false;
+        $userBid = is_logged_in() ? $bidModel->getBidByUserForOrder((int) $id, user_id()) : null;
 
         $reviewModel = new Review();
         $canReview = false;
@@ -180,6 +180,42 @@ class OrderController extends Controller
         $_SESSION['user'] = (new \App\Models\User())->getSessionData(user_id());
 
         flash('success', 'Заказ завершён! Средства переведены исполнителю.');
+        $this->redirect(url("orders/{$id}"));
+    }
+
+    public function deliver(string $id): void
+    {
+        $this->requireAuth();
+        $order = $this->orderModel->find((int) $id);
+
+        if (!$order || (int) $order['freelancer_id'] !== user_id() || $order['status'] !== 'in_progress') {
+            flash('error', 'Невозможно сдать работу по этому заказу.');
+            $this->redirect(url("orders/{$id}"));
+            return;
+        }
+
+        if (!empty($order['delivered_at'])) {
+            flash('info', 'Работа по этому заказу уже сдана.');
+            $this->redirect(url("orders/{$id}"));
+            return;
+        }
+
+        $message = trim((string) $this->input('delivery_message', ''));
+
+        $this->orderModel->update((int) $id, [
+            'delivered_at'      => date('Y-m-d H:i:s'),
+            'delivery_message'  => $message !== '' ? $message : null,
+        ]);
+
+        $user = $this->currentUser();
+        $notifModel = new Notification();
+        $notifModel->notify(
+            (int) $order['client_id'], 'work_delivered',
+            "Исполнитель {$user['name']} сдал работу по заказу «{$order['title']}». Проверьте и завершите заказ.",
+            "/orders/{$id}"
+        );
+
+        flash('success', 'Работа сдана! Ожидайте подтверждения заказчика.');
         $this->redirect(url("orders/{$id}"));
     }
 

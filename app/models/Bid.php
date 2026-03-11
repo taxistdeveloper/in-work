@@ -39,6 +39,16 @@ class Bid extends Model
         return ($result['cnt'] ?? 0) > 0;
     }
 
+    /** @return array|null Bid row with status (pending/accepted/rejected) or null */
+    public function getBidByUserForOrder(int $orderId, int $freelancerId): ?array
+    {
+        $row = $this->db->fetch(
+            "SELECT * FROM bids WHERE order_id = ? AND freelancer_id = ?",
+            [$orderId, $freelancerId]
+        );
+        return $row ?: null;
+    }
+
     public function getUserBidsWithOrders(int $userId, int $page = 1, int $perPage = 20): array
     {
         $offset = ($page - 1) * $perPage;

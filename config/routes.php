@@ -38,6 +38,7 @@ $router->group([AuthMiddleware::class], function ($router) {
     $router->post('/orders/create', [OrderController::class, 'store'], [[PageAccessMiddleware::class, 'orders_create']]);
     $router->get('/orders/{id}', [OrderController::class, 'show'], [[PageAccessMiddleware::class, 'orders']]);
     $router->post('/orders/{id}/complete', [OrderController::class, 'complete'], [[PageAccessMiddleware::class, 'orders']]);
+    $router->post('/orders/{id}/deliver', [OrderController::class, 'deliver'], [[PageAccessMiddleware::class, 'orders']]);
     $router->post('/orders/{id}/cancel', [OrderController::class, 'cancel'], [[PageAccessMiddleware::class, 'orders']]);
     $router->get('/my-orders', [OrderController::class, 'myOrders'], [[PageAccessMiddleware::class, 'my_orders']]);
 

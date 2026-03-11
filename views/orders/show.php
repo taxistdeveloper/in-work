@@ -70,7 +70,16 @@ $statusLabels = [
 
                 <!-- Действия владельца -->
                 <?php if ($isOwner && $order['status'] === 'in_progress'): ?>
-                    <div class="flex gap-3 mt-6 pt-6 border-t border-gray-100">
+                    <?php if (!empty($order['delivered_at'])): ?>
+                    <div class="mt-6 pt-6 border-t border-gray-100 rounded-xl bg-emerald-50 border border-emerald-100 p-4">
+                        <p class="text-sm font-medium text-emerald-800">Исполнитель сдал работу <?= date('d.m.Y в H:i', strtotime($order['delivered_at'])) ?>.</p>
+                        <?php if (!empty($order['delivery_message'])): ?>
+                        <p class="text-sm text-emerald-700 mt-2"><?= nl2br(e($order['delivery_message'])) ?></p>
+                        <?php endif; ?>
+                        <p class="text-xs text-emerald-600 mt-2">Проверьте результат и нажмите «Завершить заказ», чтобы перевести оплату исполнителю.</p>
+                    </div>
+                    <?php endif; ?>
+                    <div class="flex gap-3 mt-6 pt-6 border-t border-gray-100 flex-wrap">
                         <form method="POST" action="<?= url("orders/{$order['id']}/complete") ?>" class="flex-1">
                             <?= csrf_field() ?>
                             <button type="submit" onclick="return confirm('Отметить как выполненный? Средства будут переведены исполнителю.')"
@@ -86,6 +95,31 @@ $statusLabels = [
                             </button>
                         </form>
                     </div>
+                <?php endif; ?>
+
+                <!-- Сдача работы исполнителем -->
+                <?php if ($isAssigned && $order['status'] === 'in_progress'): ?>
+                    <?php if (empty($order['delivered_at'])): ?>
+                    <div class="mt-6 pt-6 border-t border-gray-100">
+                        <h3 class="text-sm font-semibold text-gray-900 mb-3">Сдать работу</h3>
+                        <form method="POST" action="<?= url("orders/{$order['id']}/deliver") ?>" class="space-y-3">
+                            <?= csrf_field() ?>
+                            <textarea name="delivery_message" rows="3" placeholder="Опишите результат или приложите ссылку на работу (необязательно)"
+                                class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition resize-none"></textarea>
+                            <button type="submit" class="px-6 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 transition">
+                                Отправить задание заказчику
+                            </button>
+                        </form>
+                    </div>
+                    <?php else: ?>
+                    <div class="mt-6 pt-6 border-t border-gray-100 rounded-xl bg-amber-50 border border-amber-100 p-4">
+                        <p class="text-sm font-medium text-amber-800">Вы сдали работу <?= date('d.m.Y в H:i', strtotime($order['delivered_at'])) ?>.</p>
+                        <?php if (!empty($order['delivery_message'])): ?>
+                        <p class="text-sm text-amber-700 mt-2"><?= nl2br(e($order['delivery_message'])) ?></p>
+                        <?php endif; ?>
+                        <p class="text-xs text-amber-600 mt-2">Ожидайте подтверждения заказчика. После этого средства поступят на ваш баланс.</p>
+                    </div>
+                    <?php endif; ?>
                 <?php endif; ?>
 
                 <?php if ($isOwner && $order['status'] === 'open'): ?>
@@ -295,10 +329,24 @@ $statusLabels = [
                 </form>
             </div>
             <?php elseif ($userBid): ?>
+                <?php if ($userBid['status'] === 'rejected'): ?>
+                <div class="bg-red-50 border border-red-100 rounded-2xl p-6 text-center">
+                    <svg class="w-10 h-10 text-red-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <p class="text-sm font-semibold text-red-700">Заказчик отклонил ваш отклик</p>
+                    <p class="text-xs text-red-600 mt-1">Ваше предложение <?= format_money((float)$userBid['amount']) ?> не принято.</p>
+                </div>
+                <?php elseif ($userBid['status'] === 'accepted'): ?>
                 <div class="bg-emerald-50 border border-emerald-100 rounded-2xl p-6 text-center">
                     <svg class="w-10 h-10 text-emerald-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    <p class="text-sm font-medium text-emerald-700">Вы уже отправили отклик на этот заказ.</p>
+                    <p class="text-sm font-medium text-emerald-700">Ваш отклик принят!</p>
                 </div>
+                <?php else: ?>
+                <div class="bg-amber-50 border border-amber-100 rounded-2xl p-6 text-center">
+                    <svg class="w-10 h-10 text-amber-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <p class="text-sm font-medium text-amber-700">Вы отправили отклик на этот заказ.</p>
+                    <p class="text-xs text-amber-600 mt-1">Ожидание решения заказчика.</p>
+                </div>
+                <?php endif; ?>
             <?php endif; ?>
 
             <?php if (!is_logged_in() && $order['status'] === 'open'): ?>

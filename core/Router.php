@@ -87,7 +87,7 @@ class Router
                     return;
                 }
 
-                call_user_func_array([$controller, $actionMethod], $params);
+                call_user_func_array([$controller, $actionMethod], array_values($params));
                 return;
             }
         }
