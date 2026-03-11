@@ -1,5 +1,6 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
+    RewriteBase /in-work/
     # Перенаправление корня на /public/
     RewriteRule ^$ public/ [L]
     RewriteRule ^(?!public/)(.*)$ public/$1 [L]

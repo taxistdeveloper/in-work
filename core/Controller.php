@@ -106,7 +106,7 @@ abstract class Controller
     protected function requireAuth(): void
     {
         if (!$this->isAuthenticated()) {
-            $this->redirect('/login');
+            $this->redirect(url('login'));
         }
     }
 }

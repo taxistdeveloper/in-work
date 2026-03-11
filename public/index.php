@@ -11,14 +11,13 @@ try {
     define('VIEW_PATH', ROOT_PATH . '/views');
 
     $appConfig = require ROOT_PATH . '/config/app.php';
-    if (file_exists(ROOT_PATH . '/config/app.production.php')) {
+    if (!empty($appConfig['is_production']) && file_exists(ROOT_PATH . '/config/app.production.php')) {
         $appConfig = array_merge($appConfig, require ROOT_PATH . '/config/app.production.php');
     }
     define('ASSET_PATH', ($appConfig['base_path'] ?? '') !== '' ? dirname($appConfig['base_path']) . '/assets' : '/assets');
     define('APP_NAME', $appConfig['name']);
     $appUrl = $appConfig['url'];
     $appUrl = preg_replace('#in-work@#', 'in-work.', $appUrl);
-    $appUrl = preg_replace('#/public/?$#', '', $appUrl);
     define('APP_URL', rtrim($appUrl, '/'));
     define('PLATFORM_FEE', $appConfig['platform_fee']);
 
@@ -58,12 +57,24 @@ try {
     require ROOT_PATH . '/config/routes.php';
 
     $method = $_SERVER['REQUEST_METHOD'];
-    $uri = $_SERVER['REQUEST_URI'];
+    $requestUri = $_SERVER['REQUEST_URI'] ?? '/';
+    $path = parse_url($requestUri, PHP_URL_PATH);
+    if ($path === false || $path === '') {
+        $path = '/';
+    }
+    $path = '/' . trim($path, "/ \t\n\r");
 
     $basePath = $appConfig['base_path'] ?? '/in-work/public';
-    $uri = substr($uri, strlen($basePath)) ?: '/';
+    $basePath = rtrim($basePath, '/');
+    if ($basePath !== '' && (strpos($path, $basePath) === 0)) {
+        $suffix = substr($path, strlen($basePath));
+        $path = ($suffix === '' || $suffix === '/') ? '/' : ($suffix ?: '/');
+    }
+    if ($path !== '/') {
+        $path = rtrim($path, '/') ?: '/';
+    }
 
-    $router->resolve($method, $uri);
+    $router->resolve($method, $path);
 
 } catch (Throwable $e) {
     http_response_code(500);

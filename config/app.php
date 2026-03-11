@@ -12,6 +12,7 @@ $prodUrl = 'https://in-work.krg-ktsk.kz';  // ТОЧКА, не @
 $prodBasePath = '';
 
 return [
+    'is_production'   => $isProduction,
     'name'            => 'inWork',
     'url'             => $isProduction ? $prodUrl : 'http://localhost/in-work/public',
     'base_path'       => $isProduction ? $prodBasePath : '/in-work/public',
