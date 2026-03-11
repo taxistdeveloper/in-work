@@ -13,7 +13,7 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// Auto-dismiss flash messages
+// Auto-dismiss flash messages + PWA registration
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('[role="alert"]').forEach(alert => {
         setTimeout(() => {
@@ -23,6 +23,12 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => alert.remove(), 500);
         }, 5000);
     });
+
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').catch(() => {
+            // ignore registration errors
+        });
+    }
 });
 
 // Format currency input

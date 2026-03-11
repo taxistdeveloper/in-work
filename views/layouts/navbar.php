@@ -1,4 +1,4 @@
-<nav class="bg-white border-b border-gray-100 sticky top-0 z-50">
+<nav class="bg-white border-b border-gray-100 sticky top-0 z-40">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16">
             <!-- Лого -->
@@ -82,28 +82,48 @@
                     <a href="<?= url('login') ?>" class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition">Войти</a>
                     <a href="<?= url('register') ?>" class="px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition shadow-sm">Регистрация</a>
                 <?php endif; ?>
-
-                <!-- Мобильное меню -->
-                <button onclick="toggleMobileMenu()" class="md:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-50">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-                </button>
-            </div>
-        </div>
-
-        <!-- Мобильное меню -->
-        <div id="mobileMenu" class="hidden md:hidden pb-4 border-t border-gray-100">
-            <div class="pt-3 space-y-1">
-                <a href="<?= url('orders') ?>" class="block px-3 py-2 rounded-lg text-base font-medium text-gray-600 hover:bg-gray-50">Лента заказов</a>
-                <?php if (is_logged_in()): ?>
-                    <?php if (user_role() === 'client'): ?>
-                        <a href="<?= url('orders/create') ?>" class="block px-3 py-2 rounded-lg text-base font-medium text-gray-600 hover:bg-gray-50">Создать заказ</a>
-                    <?php endif; ?>
-                    <a href="<?= url('my-orders') ?>" class="block px-3 py-2 rounded-lg text-base font-medium text-gray-600 hover:bg-gray-50">Мои заказы</a>
-                    <a href="<?= url('chat') ?>" class="block px-3 py-2 rounded-lg text-base font-medium text-gray-600 hover:bg-gray-50">Сообщения</a>
-                    <a href="<?= url('dashboard') ?>" class="block px-3 py-2 rounded-lg text-base font-medium text-gray-600 hover:bg-gray-50">Панель управления</a>
-                    <a href="<?= url('balance') ?>" class="block px-3 py-2 rounded-lg text-base font-medium text-gray-600 hover:bg-gray-50">Баланс: <?= format_money(current_user()['balance'] ?? 0) ?></a>
-                <?php endif; ?>
             </div>
         </div>
     </div>
 </nav>
+
+<!-- Нижняя навигация как в мобильном приложении -->
+<?php if (is_logged_in()): ?>
+<nav class="fixed inset-x-0 bottom-0 z-50 bg-white border-t border-gray-200 shadow-[0_-1px_8px_rgba(15,23,42,0.08)] md:hidden">
+    <div class="max-w-md mx-auto px-2 flex justify-between items-center h-14 text-xs font-medium text-gray-500">
+        <a href="<?= url('orders') ?>" class="flex flex-col items-center justify-center flex-1 h-full">
+            <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7l9-4 9 4-9 4-9-4z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10l9 4 9-4V7"/>
+            </svg>
+            <span>Лента</span>
+        </a>
+        <a href="<?= url('my-orders') ?>" class="flex flex-col items-center justify-center flex-1 h-full">
+            <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h8M8 11h4m-7 8h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+            <span>Мои</span>
+        </a>
+        <a href="<?= url('chat') ?>" class="flex flex-col items-center justify-center flex-1 h-full relative">
+            <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h8M8 14h5m-9 1a9 9 0 1116 0l-2 3-2-1-2 1-2-1-2 1-2-3z"/>
+            </svg>
+            <span>Чат</span>
+            <span id="nav-unread-badge-bottom" class="hidden absolute top-1.5 right-6 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center"></span>
+        </a>
+        <a href="<?= url('dashboard') ?>" class="flex flex-col items-center justify-center flex-1 h-full">
+            <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h4v12H4zM10 10h4v8h-4zM16 4h4v14h-4z"/>
+            </svg>
+            <span>Панель</span>
+        </a>
+        <a href="<?= url('profile') ?>" class="flex flex-col items-center justify-center flex-1 h-full">
+            <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM5 20a7 7 0 0114 0"/>
+            </svg>
+            <span>Профиль</span>
+        </a>
+    </div>
+</nav>
+<?php endif; ?>
+
