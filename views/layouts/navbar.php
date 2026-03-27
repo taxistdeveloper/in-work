@@ -1,3 +1,11 @@
+<?php
+$navUnreadNotif = 0;
+$navUnreadChat = 0;
+if (is_logged_in()) {
+    $navUnreadNotif = (new \App\Models\Notification())->getUnreadCount(user_id());
+    $navUnreadChat = (new \App\Models\Message())->getUnreadCount(user_id());
+}
+?>
 <nav class="bg-white border-b border-gray-100 sticky top-0 z-40">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16">
@@ -11,15 +19,20 @@
 
             <!-- Десктоп навигация -->
             <div class="hidden md:flex items-center gap-1">
-                <a href="<?= url('orders') ?>" class="px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition">Лента заказов</a>
+                <?php if (!is_logged_in() || user_role() !== 'client'): ?>
+                    <a href="<?= url('orders') ?>" class="px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition">Лента заказов</a>
+                <?php endif; ?>
                 <?php if (is_logged_in()): ?>
                     <?php if (user_role() === 'client'): ?>
                         <a href="<?= url('orders/create') ?>" class="px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition">Создать заказ</a>
                     <?php endif; ?>
-                    <a href="<?= url('my-orders') ?>" class="px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition">Мои заказы</a>
+                    <a href="<?= url('my-orders') ?>" class="px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition relative" title="Непрочитанные уведомления по заказам">
+                        Мои заказы
+                        <span id="nav-notif-badge-header" class="<?= $navUnreadNotif > 0 ? '' : 'hidden ' ?>absolute -top-1 -right-1 bg-red-500 text-white text-xs min-w-[1.25rem] h-5 px-1 rounded-full flex items-center justify-center font-medium"><?= $navUnreadNotif > 0 ? ($navUnreadNotif > 99 ? '99+' : (int) $navUnreadNotif) : '' ?></span>
+                    </a>
                     <a href="<?= url('chat') ?>" class="px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition relative">
                         Сообщения
-                        <span id="nav-unread-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center"></span>
+                        <span id="nav-unread-badge" class="<?= $navUnreadChat > 0 ? '' : 'hidden ' ?>absolute -top-1 -right-1 bg-red-500 text-white text-xs min-w-[1.25rem] h-5 px-1 rounded-full flex items-center justify-center font-medium"><?= $navUnreadChat > 0 ? ($navUnreadChat > 99 ? '99+' : (int) $navUnreadChat) : '' ?></span>
                     </a>
                 <?php endif; ?>
             </div>
@@ -91,6 +104,14 @@
 <?php if (is_logged_in()): ?>
 <nav class="fixed inset-x-0 bottom-0 z-50 bg-white border-t border-gray-200 shadow-[0_-1px_8px_rgba(15,23,42,0.08)] md:hidden">
     <div class="max-w-md mx-auto px-2 flex justify-between items-center h-14 text-xs font-medium text-gray-500">
+        <?php if (user_role() === 'client'): ?>
+        <a href="<?= url('orders/create') ?>" class="flex flex-col items-center justify-center flex-1 h-full">
+            <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            <span>Создать</span>
+        </a>
+        <?php else: ?>
         <a href="<?= url('orders') ?>" class="flex flex-col items-center justify-center flex-1 h-full">
             <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7l9-4 9 4-9 4-9-4z"/>
@@ -98,18 +119,20 @@
             </svg>
             <span>Лента</span>
         </a>
-        <a href="<?= url('my-orders') ?>" class="flex flex-col items-center justify-center flex-1 h-full">
+        <?php endif; ?>
+        <a href="<?= url('my-orders') ?>" class="flex flex-col items-center justify-center flex-1 h-full relative" title="Непрочитанные уведомления по заказам">
             <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h8M8 11h4m-7 8h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
             </svg>
             <span>Мои</span>
+            <span id="nav-notif-badge-bottom-orders" class="<?= $navUnreadNotif > 0 ? '' : 'hidden ' ?>absolute top-0.5 right-2 bg-red-500 text-white text-[10px] min-w-[1rem] h-4 px-0.5 rounded-full flex items-center justify-center font-medium"><?= $navUnreadNotif > 0 ? ($navUnreadNotif > 99 ? '99+' : (int) $navUnreadNotif) : '' ?></span>
         </a>
         <a href="<?= url('chat') ?>" class="flex flex-col items-center justify-center flex-1 h-full relative">
             <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h8M8 14h5m-9 1a9 9 0 1116 0l-2 3-2-1-2 1-2-1-2 1-2-3z"/>
             </svg>
             <span>Чат</span>
-            <span id="nav-unread-badge-bottom" class="hidden absolute top-1.5 right-6 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center"></span>
+            <span id="nav-unread-badge-bottom" class="<?= $navUnreadChat > 0 ? '' : 'hidden ' ?>absolute top-1.5 right-4 min-w-[1rem] h-4 px-0.5 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-medium"><?= $navUnreadChat > 0 ? ($navUnreadChat > 99 ? '99+' : (int) $navUnreadChat) : '' ?></span>
         </a>
         <a href="<?= url('dashboard') ?>" class="flex flex-col items-center justify-center flex-1 h-full">
             <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

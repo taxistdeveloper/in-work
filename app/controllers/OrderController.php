@@ -22,6 +22,12 @@ class OrderController extends Controller
 
     public function index(): void
     {
+        $this->requireAuth();
+        if (user_role() === 'client') {
+            $this->redirect(url('orders/edit'));
+            return;
+        }
+
         $page = max(1, (int) ($this->input('page', 1)));
         $category = $this->input('category', '');
         $search = $this->input('search', '');
@@ -37,6 +43,117 @@ class OrderController extends Controller
             'category'   => $category,
             'search'     => $search,
         ]);
+    }
+
+    public function editSelect(): void
+    {
+        $this->requireAuth();
+
+        if (user_role() !== 'client') {
+            $this->redirect(url('orders'));
+            return;
+        }
+
+        $page = max(1, (int) ($this->input('page', 1)));
+        $orders = $this->orderModel->getClientOpenOrders(user_id(), $page);
+
+        $this->view('orders.edit_select', [
+            'title'      => 'Редактировать заказ',
+            'orders'     => $orders['items'],
+            'pagination' => $orders,
+        ]);
+    }
+
+    public function edit(string $id): void
+    {
+        $this->requireAuth();
+
+        if (user_role() !== 'client') {
+            flash('error', 'Редактирование доступно только заказчикам.');
+            $this->redirect(url('orders'));
+            return;
+        }
+
+        $order = $this->orderModel->find((int) $id);
+        if (!$order || (int) $order['client_id'] !== user_id() || $order['status'] !== 'open') {
+            flash('error', 'Этот заказ нельзя изменить.');
+            $this->redirect(url('orders/edit'));
+            return;
+        }
+
+        $appConfig = require ROOT_PATH . '/config/app.php';
+
+        $this->view('orders.edit', [
+            'title'      => 'Редактировать заказ',
+            'order'      => $order,
+            'categories' => $appConfig['categories'],
+        ]);
+    }
+
+    public function update(string $id): void
+    {
+        $this->requireAuth();
+
+        if (user_role() !== 'client') {
+            flash('error', 'Редактирование доступно только заказчикам.');
+            $this->redirect(url('orders'));
+            return;
+        }
+
+        $order = $this->orderModel->find((int) $id);
+        if (!$order || (int) $order['client_id'] !== user_id() || $order['status'] !== 'open') {
+            flash('error', 'Этот заказ нельзя изменить.');
+            $this->redirect(url('orders/edit'));
+            return;
+        }
+
+        $data = $this->allInput();
+
+        if (!$this->validateCsrf()) {
+            flash('error', 'Неверный токен безопасности.');
+            $this->redirect(url("orders/{$id}/edit"));
+            return;
+        }
+
+        $validator = new Validator($data);
+        $validator
+            ->required('title', 'Название')
+            ->minLength('title', 5, 'Название')
+            ->maxLength('title', 255, 'Название')
+            ->required('description', 'Описание')
+            ->minLength('description', 20, 'Описание')
+            ->required('category', 'Категория')
+            ->required('budget', 'Бюджет')
+            ->numeric('budget', 'Бюджет')
+            ->min('budget', 5, 'Бюджет')
+            ->required('deadline', 'Дедлайн');
+
+        if ($validator->fails()) {
+            $_SESSION['old_input'] = $data;
+            $_SESSION['errors'] = $validator->firstErrors();
+            $this->redirect(url("orders/{$id}/edit"));
+            return;
+        }
+
+        $deadlineTs = strtotime((string) $data['deadline']);
+        $minTs = strtotime('tomorrow midnight');
+        if ($deadlineTs === false || $deadlineTs < $minTs) {
+            $_SESSION['old_input'] = $data;
+            $_SESSION['errors'] = ['deadline' => 'Дедлайн должен быть не раньше завтрашнего дня.'];
+            $this->redirect(url("orders/{$id}/edit"));
+            return;
+        }
+
+        $this->orderModel->update((int) $id, [
+            'title'       => $data['title'],
+            'description' => $data['description'],
+            'category'    => $data['category'],
+            'budget'      => (float) $data['budget'],
+            'deadline'    => $data['deadline'],
+        ]);
+
+        flash('success', 'Заказ обновлён.');
+        $this->redirect(url("orders/{$id}"));
     }
 
     public function create(): void
@@ -101,7 +218,7 @@ class OrderController extends Controller
         $order = $this->orderModel->getOrderWithClient((int) $id);
 
         if (!$order) {
-            $this->redirect(url('orders'));
+            $this->redirect(is_logged_in() && user_role() === 'client' ? url('orders/edit') : url('orders'));
             return;
         }
 
@@ -137,6 +254,8 @@ class OrderController extends Controller
     public function myOrders(): void
     {
         $this->requireAuth();
+
+        (new Notification())->markAllRead(user_id());
 
         $page = max(1, (int) ($this->input('page', 1)));
         $user = $this->currentUser();
@@ -249,5 +368,40 @@ class OrderController extends Controller
 
         flash('success', 'Заказ отменён.');
         $this->redirect(url("orders/{$id}"));
+    }
+
+    public function destroy(string $id): void
+    {
+        $this->requireAuth();
+
+        if (user_role() !== 'client') {
+            flash('error', 'Удалять заказы могут только заказчики.');
+            $this->redirect(url('my-orders'));
+            return;
+        }
+
+        if (!$this->validateCsrf()) {
+            flash('error', 'Неверный токен безопасности.');
+            $this->redirect(url('my-orders'));
+            return;
+        }
+
+        $order = $this->orderModel->find((int) $id);
+        if (!$order || (int) $order['client_id'] !== user_id() || $order['status'] !== 'open') {
+            flash('error', 'Этот заказ нельзя удалить.');
+            $this->redirect(url('my-orders'));
+            return;
+        }
+
+        $escrowModel = new Escrow();
+        if ($escrowModel->findByOrder((int) $id)) {
+            flash('error', 'Нельзя удалить заказ с зарезервированными средствами.');
+            $this->redirect(url("orders/{$id}"));
+            return;
+        }
+
+        $this->orderModel->destroy((int) $id);
+        flash('success', 'Заказ удалён.');
+        $this->redirect(url('my-orders'));
     }
 }

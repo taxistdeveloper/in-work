@@ -134,15 +134,15 @@ class BidController extends Controller
             [(int) $bid['order_id'], (int) $bidId]
         );
 
+        $convModel = new Conversation();
+        $conversationId = $convModel->findOrCreate(user_id(), (int) $bid['freelancer_id'], (int) $bid['order_id']);
+
         $notifModel = new Notification();
         $notifModel->notify(
             (int) $bid['freelancer_id'], 'bid_accepted',
-            "Ваш отклик на \"{$order['title']}\" принят!",
-            "/orders/{$bid['order_id']}"
+            "Ваш отклик на «{$order['title']}» принят! Напишите заказчику в чате.",
+            "/chat/{$conversationId}"
         );
-
-        $convModel = new Conversation();
-        $convModel->findOrCreate(user_id(), (int) $bid['freelancer_id'], (int) $bid['order_id']);
 
         $_SESSION['user'] = $userModel->getSessionData(user_id());
 

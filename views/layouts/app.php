@@ -34,7 +34,7 @@
     </style>
     <link rel="stylesheet" href="<?= asset('css/app.css') ?>">
 </head>
-<body class="h-full bg-gray-50 text-gray-900 antialiased">
+<body class="h-full bg-gray-50 text-gray-900 antialiased"<?php if (is_logged_in()): ?> data-nav-badges="<?= e(url('api/nav-badges')) ?>"<?php endif; ?>>
 
 <?php require VIEW_PATH . '/layouts/navbar.php'; ?>
 

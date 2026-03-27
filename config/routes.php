@@ -34,12 +34,16 @@ $router->group([AuthMiddleware::class], function ($router) {
 
     // Orders
     $router->get('/orders', [OrderController::class, 'index'], [[PageAccessMiddleware::class, 'orders']]);
+    $router->get('/orders/edit', [OrderController::class, 'editSelect'], [[PageAccessMiddleware::class, 'orders']]);
     $router->get('/orders/create', [OrderController::class, 'create'], [[PageAccessMiddleware::class, 'orders_create']]);
     $router->post('/orders/create', [OrderController::class, 'store'], [[PageAccessMiddleware::class, 'orders_create']]);
+    $router->get('/orders/{id}/edit', [OrderController::class, 'edit'], [[PageAccessMiddleware::class, 'orders']]);
+    $router->post('/orders/{id}/edit', [OrderController::class, 'update'], [[PageAccessMiddleware::class, 'orders']]);
     $router->get('/orders/{id}', [OrderController::class, 'show'], [[PageAccessMiddleware::class, 'orders']]);
     $router->post('/orders/{id}/complete', [OrderController::class, 'complete'], [[PageAccessMiddleware::class, 'orders']]);
     $router->post('/orders/{id}/deliver', [OrderController::class, 'deliver'], [[PageAccessMiddleware::class, 'orders']]);
     $router->post('/orders/{id}/cancel', [OrderController::class, 'cancel'], [[PageAccessMiddleware::class, 'orders']]);
+    $router->post('/orders/{id}/delete', [OrderController::class, 'destroy'], [[PageAccessMiddleware::class, 'orders']]);
     $router->get('/my-orders', [OrderController::class, 'myOrders'], [[PageAccessMiddleware::class, 'my_orders']]);
 
     // Bids
@@ -67,6 +71,8 @@ $router->group([AuthMiddleware::class], function ($router) {
 
     // API endpoints
     $router->get('/api/notifications', [DashboardController::class, 'notifications']);
+    $router->get('/api/notifications/unread', [DashboardController::class, 'notificationsUnread']);
+    $router->get('/api/nav-badges', [DashboardController::class, 'navBadges']);
     $router->get('/api/chat/{id}/messages', [ChatController::class, 'messages'], [[PageAccessMiddleware::class, 'chat']]);
 });
 

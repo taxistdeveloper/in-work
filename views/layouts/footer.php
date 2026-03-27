@@ -13,7 +13,7 @@
             <div>
                 <h4 class="text-sm font-semibold text-gray-900 mb-3">Платформа</h4>
                 <ul class="space-y-2">
-                    <li><a href="<?= url('orders') ?>" class="text-sm text-gray-500 hover:text-brand-600 transition">Лента заказов</a></li>
+                    <li><a href="<?= (is_logged_in() && user_role() === 'client') ? url('my-orders') : url('orders') ?>" class="text-sm text-gray-500 hover:text-brand-600 transition"><?= (is_logged_in() && user_role() === 'client') ? 'Мои заказы' : 'Лента заказов' ?></a></li>
                     <li><a href="<?= url('register') ?>" class="text-sm text-gray-500 hover:text-brand-600 transition">Стать фрилансером</a></li>
                     <li><a href="<?= url('register') ?>" class="text-sm text-gray-500 hover:text-brand-600 transition">Найти специалиста</a></li>
                 </ul>

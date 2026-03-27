@@ -25,6 +25,15 @@ class Notification extends Model
         return (int) ($result['cnt'] ?? 0);
     }
 
+    /** Unread rows only; does not mark as read (for polling / push). */
+    public function getUnreadNotifications(int $userId, int $limit = 50): array
+    {
+        return $this->db->fetchAll(
+            "SELECT * FROM notifications WHERE user_id = ? AND is_read = 0 ORDER BY id DESC LIMIT ?",
+            [$userId, $limit]
+        );
+    }
+
     public function markAllRead(int $userId): void
     {
         $this->db->query(

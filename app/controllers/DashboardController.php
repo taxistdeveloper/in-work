@@ -49,4 +49,31 @@ class DashboardController extends Controller
 
         $this->json(['notifications' => $notifications]);
     }
+
+    /** Unread notifications for polling; does not mark as read. */
+    public function notificationsUnread(): void
+    {
+        $user = $this->currentUser();
+        $notifModel = new Notification();
+        $notifications = $notifModel->getUnreadNotifications($user['id']);
+        $unreadCount = $notifModel->getUnreadCount($user['id']);
+        $this->json([
+            'notifications'  => $notifications,
+            'unread_count'   => $unreadCount,
+        ]);
+    }
+
+    /** Счётчики шапки/нижней навигации + список непрочитанных уведомлений для системного пуша (один запрос). */
+    public function navBadges(): void
+    {
+        $user = $this->currentUser();
+        $notifModel = new Notification();
+        $msgModel = new Message();
+        $notifications = $notifModel->getUnreadNotifications($user['id']);
+        $this->json([
+            'unread_notifications' => $notifModel->getUnreadCount($user['id']),
+            'unread_messages'      => $msgModel->getUnreadCount($user['id']),
+            'notifications'        => $notifications,
+        ]);
+    }
 }

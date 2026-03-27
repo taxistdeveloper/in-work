@@ -42,6 +42,11 @@ class Order extends Model
         return $this->paginate($page, $perPage, 'client_id = ?', [$clientId], 'created_at DESC');
     }
 
+    public function getClientOpenOrders(int $clientId, int $page = 1, int $perPage = 20): array
+    {
+        return $this->paginate($page, $perPage, "client_id = ? AND status = 'open'", [$clientId], 'created_at DESC');
+    }
+
     public function getFreelancerOrders(int $freelancerId, int $page = 1, int $perPage = 20): array
     {
         return $this->paginate($page, $perPage, 'freelancer_id = ?', [$freelancerId], 'created_at DESC');
