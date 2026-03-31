@@ -10,11 +10,14 @@ $isProduction = ($host === 'in-work.krg-ktsk.kz')
 
 $prodUrl = 'https://in-work.krg-ktsk.kz';  // ТОЧКА, не @
 $prodBasePath = '';
+$scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$localHost = $host !== '' ? $host : 'localhost';
+$localUrl = $scheme . '://' . $localHost . '/in-work/public';
 
 return [
     'is_production'   => $isProduction,
     'name'            => 'inWork',
-    'url'             => $isProduction ? $prodUrl : 'http://localhost/in-work/public',
+    'url'             => $isProduction ? $prodUrl : $localUrl,
     'base_path'       => $isProduction ? $prodBasePath : '/in-work/public',
     'debug'           => !$isProduction,
     'timezone'        => 'Asia/Almaty',

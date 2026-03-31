@@ -6,6 +6,7 @@ class OrderModel {
     required this.category,
     required this.budget,
     required this.deadline,
+    required this.status,
   });
 
   final int id;
@@ -14,6 +15,7 @@ class OrderModel {
   final String category;
   final double budget;
   final String deadline;
+  final String status;
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
     return OrderModel(
@@ -23,6 +25,7 @@ class OrderModel {
       category: json['category'] as String? ?? '',
       budget: (json['budget'] as num).toDouble(),
       deadline: json['deadline'] as String? ?? '',
+      status: json['status'] as String? ?? 'open',
     );
   }
 }

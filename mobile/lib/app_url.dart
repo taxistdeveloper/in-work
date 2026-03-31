@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 /// Соответствует `config/app.php`: прод — HTTPS, локально — `/in-work/public`.
 const String _productionUrl = 'https://in-work.krg-ktsk.kz/';
 
-/// Локальный путь под MAMP (Apache на порту по умолчанию).
+/// Локальный путь под MAMP (Apache на порту по умолчанию, без указания порта).
 const String _localPath = '/in-work/public/';
 
 /// Явный URL: `flutter run --dart-define=WEB_URL=http://192.168.1.5/in-work/public/`

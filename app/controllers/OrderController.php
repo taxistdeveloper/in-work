@@ -434,4 +434,192 @@ class OrderController extends Controller
         flash('success', 'Заказ удалён.');
         $this->redirect(url('my-orders'));
     }
+
+    private function mapOrderForApi(array $order): array
+    {
+        return [
+            'id' => (int) $order['id'],
+            'client_id' => (int) $order['client_id'],
+            'freelancer_id' => isset($order['freelancer_id']) ? (int) $order['freelancer_id'] : null,
+            'title' => $order['title'],
+            'description' => $order['description'],
+            'category' => $order['category'],
+            'budget' => isset($order['budget']) ? (float) $order['budget'] : 0.0,
+            'final_price' => isset($order['final_price']) ? (float) $order['final_price'] : null,
+            'deadline' => $order['deadline'] ?? null,
+            'status' => $order['status'],
+            'created_at' => $order['created_at'] ?? null,
+            'updated_at' => $order['updated_at'] ?? null,
+            'client_name' => $order['client_name'] ?? null,
+            'client_rating' => isset($order['client_rating']) ? (float) $order['client_rating'] : null,
+            'client_completed' => isset($order['client_completed']) ? (int) $order['client_completed'] : null,
+        ];
+    }
+
+    public function apiShow(string $id): void
+    {
+        $order = $this->orderModel->getOrderWithClient((int) $id);
+        if (!$order) {
+            $this->jsonError('Заказ не найден', 404, [], 'NOT_FOUND');
+            return;
+        }
+
+        $bidModel = new Bid();
+        $bids = $bidModel->getOrderBids((int) $id);
+        $userBid = is_logged_in() ? $bidModel->getBidByUserForOrder((int) $id, user_id()) : null;
+        $reviews = (new Review())->getUserReviews((int) $order['client_id'], 1, 5);
+
+        $this->jsonSuccess([
+            'order' => $this->mapOrderForApi($order),
+            'bids' => $bids,
+            'user_bid' => $userBid,
+            'client_reviews' => $reviews['items'],
+        ]);
+    }
+
+    public function apiMyOrders(): void
+    {
+        $this->requireAuth();
+        $page = max(1, (int) ($this->input('page', 1)));
+        $user = $this->currentUser();
+        $orders = $user['role'] === 'client'
+            ? $this->orderModel->getClientOrders((int) $user['id'], $page)
+            : $this->orderModel->getFreelancerOrders((int) $user['id'], $page);
+
+        $this->jsonSuccess([
+            'items' => array_map(fn(array $order): array => $this->mapOrderForApi($order), $orders['items']),
+            'pagination' => [
+                'page' => (int) $orders['page'],
+                'per_page' => (int) $orders['per_page'],
+                'total' => (int) $orders['total'],
+                'totalPages' => (int) $orders['total_pages'],
+            ],
+        ]);
+    }
+
+    public function apiStore(): void
+    {
+        $this->requireAuth();
+        if (user_role() !== 'client') {
+            $this->jsonError('Только заказчик может создавать заказ', 403, [], 'FORBIDDEN');
+            return;
+        }
+
+        $data = $this->allInput();
+        $required = ['title', 'description', 'category', 'budget', 'deadline'];
+        $errors = [];
+        foreach ($required as $field) {
+            if (trim((string) ($data[$field] ?? '')) === '') {
+                $errors[$field] = 'Поле обязательно';
+            }
+        }
+        if ((float) ($data['budget'] ?? 0) < 5) {
+            $errors['budget'] = 'Бюджет должен быть не менее 5';
+        }
+        if (mb_strlen((string) ($data['title'] ?? '')) < 5) {
+            $errors['title'] = 'Название минимум 5 символов';
+        }
+        if (mb_strlen((string) ($data['description'] ?? '')) < 20) {
+            $errors['description'] = 'Описание минимум 20 символов';
+        }
+        if ($errors !== []) {
+            $this->jsonError('Ошибка валидации', 422, $errors, 'VALIDATION_ERROR');
+            return;
+        }
+
+        $orderId = $this->orderModel->create([
+            'client_id'   => user_id(),
+            'title'       => $data['title'],
+            'description' => $data['description'],
+            'category'    => $data['category'],
+            'budget'      => (float) $data['budget'],
+            'deadline'    => $data['deadline'],
+            'status'      => 'open',
+        ]);
+
+        $order = $this->orderModel->find((int) $orderId);
+        $this->jsonSuccess(['order' => $this->mapOrderForApi($order ?: [])], 'Заказ создан', 201);
+    }
+
+    public function apiUpdate(string $id): void
+    {
+        $this->requireAuth();
+        $order = $this->orderModel->find((int) $id);
+        if (!$order || (int) $order['client_id'] !== user_id() || $order['status'] !== 'open') {
+            $this->jsonError('Этот заказ нельзя изменить', 403, [], 'FORBIDDEN');
+            return;
+        }
+        $data = $this->allInput();
+        $this->orderModel->update((int) $id, [
+            'title'       => $data['title'] ?? $order['title'],
+            'description' => $data['description'] ?? $order['description'],
+            'category'    => $data['category'] ?? $order['category'],
+            'budget'      => isset($data['budget']) ? (float) $data['budget'] : (float) $order['budget'],
+            'deadline'    => $data['deadline'] ?? $order['deadline'],
+        ]);
+        $updated = $this->orderModel->find((int) $id);
+        $this->jsonSuccess(['order' => $this->mapOrderForApi($updated ?: $order)], 'Заказ обновлён');
+    }
+
+    public function apiComplete(string $id): void
+    {
+        $this->requireAuth();
+        $order = $this->orderModel->find((int) $id);
+        if (!$order || (int) $order['client_id'] !== user_id() || $order['status'] !== 'in_progress') {
+            $this->jsonError('Невозможно завершить этот заказ', 403, [], 'FORBIDDEN');
+            return;
+        }
+        (new EscrowService())->releaseFunds((int) $id);
+        $this->orderModel->update((int) $id, ['status' => 'completed']);
+        $_SESSION['user'] = (new \App\Models\User())->getSessionData(user_id());
+        $this->jsonSuccess([], 'Заказ завершён');
+    }
+
+    public function apiDeliver(string $id): void
+    {
+        $this->requireAuth();
+        $order = $this->orderModel->find((int) $id);
+        if (!$order || (int) $order['freelancer_id'] !== user_id() || $order['status'] !== 'in_progress') {
+            $this->jsonError('Невозможно сдать работу по этому заказу', 403, [], 'FORBIDDEN');
+            return;
+        }
+        $message = trim((string) $this->input('delivery_message', ''));
+        $this->orderModel->update((int) $id, [
+            'delivered_at' => date('Y-m-d H:i:s'),
+            'delivery_message' => $message !== '' ? $message : null,
+        ]);
+        $this->jsonSuccess([], 'Работа сдана');
+    }
+
+    public function apiCancel(string $id): void
+    {
+        $this->requireAuth();
+        $order = $this->orderModel->find((int) $id);
+        if (!$order || (int) $order['client_id'] !== user_id()) {
+            $this->jsonError('Невозможно отменить этот заказ', 403, [], 'FORBIDDEN');
+            return;
+        }
+        if ($order['status'] === 'in_progress') {
+            (new EscrowService())->refundFunds((int) $id);
+            $_SESSION['user'] = (new \App\Models\User())->getSessionData(user_id());
+        }
+        $this->orderModel->update((int) $id, ['status' => 'cancelled']);
+        $this->jsonSuccess([], 'Заказ отменён');
+    }
+
+    public function apiDestroy(string $id): void
+    {
+        $this->requireAuth();
+        if (user_role() !== 'client') {
+            $this->jsonError('Удалять заказы могут только заказчики', 403, [], 'FORBIDDEN');
+            return;
+        }
+        $order = $this->orderModel->find((int) $id);
+        if (!$order || (int) $order['client_id'] !== user_id() || $order['status'] !== 'open') {
+            $this->jsonError('Этот заказ нельзя удалить', 403, [], 'FORBIDDEN');
+            return;
+        }
+        $this->orderModel->destroy((int) $id);
+        $this->jsonSuccess([], 'Заказ удалён');
+    }
 }

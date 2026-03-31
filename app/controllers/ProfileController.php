@@ -85,4 +85,47 @@ class ProfileController extends Controller
         flash('success', 'Профиль обновлён!');
         $this->redirect(url('profile'));
     }
+
+    public function apiShow(string $id): void
+    {
+        $profile = $this->userModel->getProfile((int) $id);
+        if (!$profile) {
+            $this->jsonError('Пользователь не найден', 404, [], 'NOT_FOUND');
+            return;
+        }
+        unset($profile['password']);
+        $this->jsonSuccess(['profile' => $profile]);
+    }
+
+    public function apiMe(): void
+    {
+        $this->requireAuth();
+        $profile = $this->userModel->getProfile(user_id());
+        if (!$profile) {
+            $this->jsonError('Пользователь не найден', 404, [], 'NOT_FOUND');
+            return;
+        }
+        unset($profile['password']);
+        $this->jsonSuccess(['profile' => $profile]);
+    }
+
+    public function apiUpdate(): void
+    {
+        $this->requireAuth();
+        $data = $this->allInput();
+        $name = trim((string) ($data['name'] ?? ''));
+        if (mb_strlen($name) < 2) {
+            $this->jsonError('Ошибка валидации', 422, ['name' => 'Имя минимум 2 символа'], 'VALIDATION_ERROR');
+            return;
+        }
+        $updateData = [
+            'name' => $name,
+            'bio' => (string) ($data['bio'] ?? ''),
+        ];
+        $this->userModel->update(user_id(), $updateData);
+        $_SESSION['user'] = $this->userModel->getSessionData(user_id());
+        $profile = $this->userModel->getProfile(user_id());
+        unset($profile['password']);
+        $this->jsonSuccess(['profile' => $profile], 'Профиль обновлён');
+    }
 }

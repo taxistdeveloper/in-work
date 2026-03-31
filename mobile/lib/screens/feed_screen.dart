@@ -1,23 +1,25 @@
 import 'package:flutter/material.dart';
 
-import '../api/orders_api.dart';
+import '../api/app_api.dart';
 import '../models/order.dart';
+import '../ui/components/components.dart';
+import 'order_detail_screen.dart';
 
 class FeedScreen extends StatefulWidget {
-  const FeedScreen({super.key});
+  const FeedScreen({super.key, required this.api});
+  final OrdersApi api;
 
   @override
   State<FeedScreen> createState() => _FeedScreenState();
 }
 
 class _FeedScreenState extends State<FeedScreen> {
-  final _api = OrdersApi();
   late Future<List<OrderModel>> _future;
 
   @override
   void initState() {
     super.initState();
-    _future = _api.fetchOpenOrders();
+    _future = widget.api.fetchOpenOrders();
   }
 
   @override
@@ -26,10 +28,14 @@ class _FeedScreenState extends State<FeedScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Text(
-            'Лента заказов',
-            style: Theme.of(context).textTheme.headlineSmall,
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Лента заказов', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Text('Открытые проекты для исполнителей', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600)),
+            ],
           ),
         ),
         Expanded(
@@ -41,99 +47,72 @@ class _FeedScreenState extends State<FeedScreen> {
               }
 
               if (snapshot.hasError) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.error_outline, size: 40),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Не удалось загрузить заказы',
-                          style: Theme.of(context).textTheme.titleMedium,
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          snapshot.error.toString(),
-                          style: Theme.of(context).textTheme.bodySmall,
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 16),
-                        FilledButton(
-                          onPressed: () {
-                            setState(() {
-                              _future = _api.fetchOpenOrders();
-                            });
-                          },
-                          child: const Text('Повторить'),
-                        ),
-                      ],
-                    ),
-                  ),
+                return ErrorState(
+                  message: snapshot.error.toString(),
+                  onRetry: () {
+                    setState(() {
+                      _future = widget.api.fetchOpenOrders();
+                    });
+                  },
                 );
               }
 
               final items = snapshot.data ?? const <OrderModel>[];
 
               if (items.isEmpty) {
-                return const Center(
-                  child: Text('Пока нет открытых заказов'),
-                );
+                return const EmptyState(title: 'Пока нет открытых заказов', subtitle: 'Загляните позже или создайте свой заказ на сайте.');
               }
 
               return ListView.separated(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                 itemCount: items.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   final order = items[index];
-                  return Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(
-                        color: Theme.of(context).colorScheme.outlineVariant,
-                      ),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => OrderDetailScreen(
+                            orderId: order.id,
+                            api: widget.api,
+                          ),
+                        ),
+                      );
+                    },
+                    child: AppCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            order.title,
-                            style: Theme.of(context).textTheme.titleMedium,
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Text(order.category, style: Theme.of(context).textTheme.labelSmall),
+                              ),
+                              StatusChip(label: 'Открыт', color: Colors.green),
+                            ],
                           ),
                           const SizedBox(height: 8),
+                          Text(order.title, style: Theme.of(context).textTheme.titleMedium),
+                          const SizedBox(height: 6),
                           Text(
                             order.description,
-                            maxLines: 3,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.bodyMedium,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade700),
                           ),
                           const SizedBox(height: 12),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                '${order.budget.toStringAsFixed(0)} ₸',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleMedium
-                                    ?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .primary,
-                                    ),
-                              ),
-                              FilledButton.tonal(
-                                onPressed: () {
-                                  // TODO: переход на экран детали заказа
-                                },
-                                child: const Text('Подробнее'),
-                              ),
+                              MoneyText(order.budget),
+                              const Icon(Icons.chevron_right, color: Colors.grey),
                             ],
                           ),
                         ],
@@ -149,5 +128,4 @@ class _FeedScreenState extends State<FeedScreen> {
     );
   }
 }
-
 

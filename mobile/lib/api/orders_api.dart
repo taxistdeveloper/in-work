@@ -11,7 +11,7 @@ class OrdersApi {
   final String _baseUrl;
 
   Future<List<OrderModel>> fetchOpenOrders() async {
-    final uri = Uri.parse('$_baseUrl/api/orders');
+    final uri = Uri.parse(_baseUrl).resolve('api/orders');
     final response = await http.get(uri);
 
     if (response.statusCode != 200) {

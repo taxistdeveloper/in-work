@@ -10,7 +10,12 @@ class AuthMiddleware
             if ($this->isApiRequest()) {
                 http_response_code(401);
                 header('Content-Type: application/json');
-                echo json_encode(['error' => 'Необходима авторизация']);
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => 'Необходима авторизация',
+                    'errors' => [],
+                    'code' => 'UNAUTHORIZED',
+                ], JSON_UNESCAPED_UNICODE);
             } else {
                 header('Location: ' . APP_URL . '/login');
             }

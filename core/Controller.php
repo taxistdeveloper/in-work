@@ -4,6 +4,12 @@ namespace Core;
 
 abstract class Controller
 {
+    protected function isApiRequest(): bool
+    {
+        $uri = $_SERVER['REQUEST_URI'] ?? '';
+        return strpos($uri, '/api/') === 0;
+    }
+
     protected function view(string $view, array $data = []): void
     {
         extract($data);
@@ -49,6 +55,25 @@ abstract class Controller
         http_response_code($statusCode);
         header('Content-Type: application/json');
         echo json_encode($data, JSON_UNESCAPED_UNICODE);
+    }
+
+    protected function jsonSuccess(array $data = [], string $message = 'OK', int $statusCode = 200): void
+    {
+        $this->json([
+            'status' => 'ok',
+            'message' => $message,
+            'data' => $data,
+        ], $statusCode);
+    }
+
+    protected function jsonError(string $message, int $statusCode = 400, array $errors = [], string $code = ''): void
+    {
+        $this->json([
+            'status' => 'error',
+            'message' => $message,
+            'errors' => $errors,
+            'code' => $code,
+        ], $statusCode);
     }
 
     protected function redirect(string $url): void

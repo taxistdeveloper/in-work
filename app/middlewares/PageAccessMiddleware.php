@@ -32,6 +32,16 @@ class PageAccessMiddleware
     private function showMaintenancePage(string $pageName): void
     {
         http_response_code(503);
+        $uri = $_SERVER['REQUEST_URI'] ?? '';
+        if (strpos($uri, '/api/') === 0) {
+            header('Content-Type: application/json');
+            echo json_encode([
+                'status' => 'error',
+                'message' => "Раздел \"{$pageName}\" временно недоступен",
+                'code' => 'PAGE_DISABLED',
+            ], JSON_UNESCAPED_UNICODE);
+            return;
+        }
         $title = 'В разработке';
         extract(['pageName' => $pageName, 'title' => $title]);
 

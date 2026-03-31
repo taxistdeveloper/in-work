@@ -21,6 +21,8 @@ use App\Middlewares\PageAccessMiddleware;
 $router->get('/', [HomeController::class, 'index']);
 // Public API
 $router->get('/api/orders', [OrderController::class, 'apiIndex']);
+$router->post('/api/auth/login', [AuthController::class, 'apiLogin']);
+$router->post('/api/auth/register', [AuthController::class, 'apiRegister']);
 
 // Auth (guest only)
 $router->get('/register', [AuthController::class, 'showRegister'], [GuestMiddleware::class, [PageAccessMiddleware::class, 'register']]);
@@ -72,10 +74,31 @@ $router->group([AuthMiddleware::class], function ($router) {
     $router->post('/chat/{id}/send', [ChatController::class, 'send'], [[PageAccessMiddleware::class, 'chat']]);
 
     // API endpoints
+    $router->get('/api/auth/me', [AuthController::class, 'apiMe']);
+    $router->post('/api/auth/logout', [AuthController::class, 'logout']);
+    $router->get('/api/orders/{id}', [OrderController::class, 'apiShow'], [[PageAccessMiddleware::class, 'orders']]);
+    $router->get('/api/my-orders', [OrderController::class, 'apiMyOrders'], [[PageAccessMiddleware::class, 'my_orders']]);
+    $router->post('/api/orders', [OrderController::class, 'apiStore'], [[PageAccessMiddleware::class, 'orders_create']]);
+    $router->post('/api/orders/{id}/update', [OrderController::class, 'apiUpdate'], [[PageAccessMiddleware::class, 'orders']]);
+    $router->post('/api/orders/{id}/complete', [OrderController::class, 'apiComplete'], [[PageAccessMiddleware::class, 'orders']]);
+    $router->post('/api/orders/{id}/deliver', [OrderController::class, 'apiDeliver'], [[PageAccessMiddleware::class, 'orders']]);
+    $router->post('/api/orders/{id}/cancel', [OrderController::class, 'apiCancel'], [[PageAccessMiddleware::class, 'orders']]);
+    $router->post('/api/orders/{id}/delete', [OrderController::class, 'apiDestroy'], [[PageAccessMiddleware::class, 'orders']]);
+    $router->post('/api/orders/{id}/bid', [BidController::class, 'apiStore'], [[PageAccessMiddleware::class, 'orders']]);
+    $router->post('/api/bids/{id}/accept', [BidController::class, 'apiAccept'], [[PageAccessMiddleware::class, 'orders']]);
+    $router->post('/api/bids/{id}/reject', [BidController::class, 'apiReject'], [[PageAccessMiddleware::class, 'orders']]);
+    $router->get('/api/chats', [ChatController::class, 'apiConversations'], [[PageAccessMiddleware::class, 'chat']]);
     $router->get('/api/notifications', [DashboardController::class, 'notifications']);
     $router->get('/api/notifications/unread', [DashboardController::class, 'notificationsUnread']);
     $router->get('/api/nav-badges', [DashboardController::class, 'navBadges']);
     $router->get('/api/chat/{id}/messages', [ChatController::class, 'messages'], [[PageAccessMiddleware::class, 'chat']]);
+    $router->post('/api/chat/{id}/send', [ChatController::class, 'apiSend'], [[PageAccessMiddleware::class, 'chat']]);
+    $router->get('/api/profile', [ProfileController::class, 'apiMe'], [[PageAccessMiddleware::class, 'profile']]);
+    $router->get('/api/profile/{id}', [ProfileController::class, 'apiShow'], [[PageAccessMiddleware::class, 'profile']]);
+    $router->post('/api/profile', [ProfileController::class, 'apiUpdate'], [[PageAccessMiddleware::class, 'profile']]);
+    $router->get('/api/balance', [BalanceController::class, 'apiIndex'], [[PageAccessMiddleware::class, 'balance']]);
+    $router->post('/api/balance/deposit', [BalanceController::class, 'apiDeposit'], [[PageAccessMiddleware::class, 'balance']]);
+    $router->post('/api/balance/withdraw', [BalanceController::class, 'apiWithdraw'], [[PageAccessMiddleware::class, 'balance']]);
 });
 
 // Admin panel (admin only)

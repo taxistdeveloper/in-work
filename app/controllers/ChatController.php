@@ -122,7 +122,48 @@ class ChatController extends Controller
         }
 
         $this->msgModel->markAsRead((int) $id, user_id());
+        $messages = array_map(static function (array $m): array {
+            $m['current_user_id'] = user_id();
+            return $m;
+        }, $messages);
 
         $this->json(['messages' => $messages]);
+    }
+
+    public function apiConversations(): void
+    {
+        $this->requireAuth();
+        $conversations = $this->convModel->getUserConversations(user_id());
+        $this->jsonSuccess(['items' => $conversations]);
+    }
+
+    public function apiSend(string $id): void
+    {
+        $this->requireAuth();
+        $conversation = $this->convModel->getWithPartner((int) $id, user_id());
+        if (!$conversation) {
+            $this->jsonError('Чат не найден', 404, [], 'NOT_FOUND');
+            return;
+        }
+        $data = $this->allInput();
+        $body = trim((string) ($data['message'] ?? ''));
+        if ($body === '') {
+            $this->jsonError('Сообщение пустое', 422, ['message' => 'Введите текст сообщения'], 'VALIDATION_ERROR');
+            return;
+        }
+        $msgId = $this->msgModel->create([
+            'conversation_id' => (int) $id,
+            'sender_id' => user_id(),
+            'body' => $body,
+        ]);
+        $this->convModel->update((int) $id, ['last_message_at' => date('Y-m-d H:i:s')]);
+        $this->jsonSuccess([
+            'message' => [
+                'id' => $msgId,
+                'body' => $body,
+                'sender_id' => user_id(),
+                'created_at' => date('Y-m-d H:i:s'),
+            ]
+        ], 'Сообщение отправлено', 201);
     }
 }

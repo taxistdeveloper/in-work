@@ -180,4 +180,90 @@ class BidController extends Controller
         flash('success', 'Отклик отклонён.');
         $this->redirect(url("orders/{$bid['order_id']}"));
     }
+
+    public function apiStore(string $orderId): void
+    {
+        $this->requireAuth();
+        $user = $this->currentUser();
+        if ($user['role'] !== 'freelancer') {
+            $this->jsonError('Только исполнители могут откликаться', 403, [], 'FORBIDDEN');
+            return;
+        }
+        $order = $this->orderModel->find((int) $orderId);
+        if (!$order || $order['status'] !== 'open') {
+            $this->jsonError('Заказ недоступен для откликов', 422, [], 'ORDER_NOT_OPEN');
+            return;
+        }
+        if ($this->bidModel->hasUserBid((int) $orderId, user_id())) {
+            $this->jsonError('Вы уже отправили отклик', 409, [], 'BID_EXISTS');
+            return;
+        }
+        $amount = (float) $this->input('amount', 0);
+        $message = trim((string) $this->input('message', ''));
+        if ($amount < 100) {
+            $this->jsonError('Сумма отклика должна быть не менее 100', 422, ['amount' => 'Минимум 100'], 'VALIDATION_ERROR');
+            return;
+        }
+        $bidId = $this->bidModel->create([
+            'order_id' => (int) $orderId,
+            'freelancer_id' => user_id(),
+            'amount' => $amount,
+            'message' => $message,
+            'status' => 'pending',
+        ]);
+        $this->jsonSuccess(['bid_id' => $bidId], 'Отклик отправлен', 201);
+    }
+
+    public function apiAccept(string $bidId): void
+    {
+        $this->requireAuth();
+        $bid = $this->bidModel->find((int) $bidId);
+        if (!$bid) {
+            $this->jsonError('Отклик не найден', 404, [], 'NOT_FOUND');
+            return;
+        }
+        $order = $this->orderModel->find((int) $bid['order_id']);
+        if (!$order || (int) $order['client_id'] !== user_id() || $order['status'] !== 'open') {
+            $this->jsonError('Невозможно принять этот отклик', 403, [], 'FORBIDDEN');
+            return;
+        }
+        $userModel = new User();
+        $client = $userModel->find(user_id());
+        if ((float) $client['balance'] < (float) $bid['amount']) {
+            $this->jsonError('Недостаточно средств. Пополните баланс', 422, [], 'INSUFFICIENT_FUNDS');
+            return;
+        }
+        $success = (new EscrowService())->holdFunds((int) $bid['order_id'], user_id(), (int) $bid['freelancer_id'], (float) $bid['amount']);
+        if (!$success) {
+            $this->jsonError('Ошибка обработки эскроу', 500, [], 'ESCROW_ERROR');
+            return;
+        }
+        $this->orderModel->update((int) $bid['order_id'], [
+            'freelancer_id' => $bid['freelancer_id'],
+            'final_price' => $bid['amount'],
+            'status' => 'in_progress',
+        ]);
+        $this->bidModel->update((int) $bidId, ['status' => 'accepted']);
+        $db = \Core\Database::getInstance();
+        $db->query("UPDATE bids SET status = 'rejected' WHERE order_id = ? AND id != ? AND status = 'pending'", [(int) $bid['order_id'], (int) $bidId]);
+        $_SESSION['user'] = $userModel->getSessionData(user_id());
+        $this->jsonSuccess([], 'Отклик принят');
+    }
+
+    public function apiReject(string $bidId): void
+    {
+        $this->requireAuth();
+        $bid = $this->bidModel->find((int) $bidId);
+        if (!$bid) {
+            $this->jsonError('Отклик не найден', 404, [], 'NOT_FOUND');
+            return;
+        }
+        $order = $this->orderModel->find((int) $bid['order_id']);
+        if (!$order || (int) $order['client_id'] !== user_id()) {
+            $this->jsonError('Невозможно отклонить этот отклик', 403, [], 'FORBIDDEN');
+            return;
+        }
+        $this->bidModel->update((int) $bidId, ['status' => 'rejected']);
+        $this->jsonSuccess([], 'Отклик отклонён');
+    }
 }
