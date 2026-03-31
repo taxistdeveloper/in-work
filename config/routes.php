@@ -19,6 +19,8 @@ use App\Middlewares\PageAccessMiddleware;
 
 // Public
 $router->get('/', [HomeController::class, 'index']);
+// Public API
+$router->get('/api/orders', [OrderController::class, 'apiIndex']);
 
 // Auth (guest only)
 $router->get('/register', [AuthController::class, 'showRegister'], [GuestMiddleware::class, [PageAccessMiddleware::class, 'register']]);

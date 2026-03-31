@@ -45,6 +45,36 @@ class OrderController extends Controller
         ]);
     }
 
+    public function apiIndex(): void
+    {
+        $page = max(1, (int) ($this->input('page', 1)));
+        $category = $this->input('category', '');
+        $search = $this->input('search', '');
+
+        $orders = $this->orderModel->getOpenOrders($page, 20, $category, $search);
+
+        $this->json([
+            'items' => array_map(static function (array $order): array {
+                return [
+                    'id'          => (int) $order['id'],
+                    'title'       => $order['title'],
+                    'description' => $order['description'],
+                    'category'    => $order['category'],
+                    'budget'      => (float) $order['budget'],
+                    'deadline'    => $order['deadline'],
+                    'status'      => $order['status'],
+                    'created_at'  => $order['created_at'],
+                ];
+            }, $orders['items']),
+            'pagination' => [
+                'page'       => (int) $orders['page'],
+                'per_page'   => (int) $orders['per_page'],
+                'total'      => (int) $orders['total'],
+                'totalPages' => (int) $orders['total_pages'],
+            ],
+        ]);
+    }
+
     public function editSelect(): void
     {
         $this->requireAuth();
