@@ -46,6 +46,7 @@ class _WebShellState extends State<WebShell> {
 
   int _loadingProgress = 0;
   String? _lastError;
+  int _selectedAppTab = 0;
 
   @override
   void initState() {
@@ -105,94 +106,120 @@ class _WebShellState extends State<WebShell> {
     return true;
   }
 
+  Future<void> _handleAppTabChange(int index) async {
+    setState(() {
+      _selectedAppTab = index;
+    });
+
+    String path;
+    switch (index) {
+      case 0:
+        path = ''; // главная / лента
+        break;
+      case 1:
+        path = 'my-orders';
+        break;
+      case 2:
+        path = 'chat';
+        break;
+      case 3:
+        path = 'dashboard';
+        break;
+      case 4:
+        path = 'profile';
+        break;
+      default:
+        path = '';
+    }
+
+    final uri = Uri.parse('$_startUrl$path');
+    await _controller.loadRequest(uri);
+  }
+
   @override
   Widget build(BuildContext context) {
     final scaffold = Scaffold(
-        body: SafeArea(
-          child: Stack(
-            children: [
-              WebViewWidget(controller: _controller),
-              if (_loadingProgress < 100)
-                LinearProgressIndicator(
-                  value: _loadingProgress / 100,
-                  minHeight: 2,
-                ),
-              if (_lastError != null)
-                Material(
-                  color: Colors.white,
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.wifi_off, size: 48, color: Colors.grey),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Не удалось загрузить страницу',
-                            style: Theme.of(context).textTheme.titleMedium,
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            _lastError!,
-                            style: Theme.of(context).textTheme.bodySmall,
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            _startUrl,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 20),
-                          FilledButton(
-                            onPressed: _reload,
-                            child: const Text('Повторить'),
-                          ),
-                        ],
-                      ),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            WebViewWidget(controller: _controller),
+            if (_loadingProgress < 100)
+              LinearProgressIndicator(
+                value: _loadingProgress / 100,
+                minHeight: 2,
+              ),
+            if (_lastError != null)
+              Material(
+                color: Colors.white,
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.wifi_off, size: 48, color: Colors.grey),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Не удалось загрузить страницу',
+                          style: Theme.of(context).textTheme.titleMedium,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _lastError!,
+                          style: Theme.of(context).textTheme.bodySmall,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _startUrl,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 20),
+                        FilledButton(
+                          onPressed: _reload,
+                          child: const Text('Повторить'),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-            ],
-          ),
-        ),
-        bottomNavigationBar: NavigationBar(
-          height: 56,
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.arrow_back),
-              label: 'Назад',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.refresh),
-              label: 'Обновить',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.home_outlined),
-              label: 'В начало',
-            ),
+              ),
           ],
-          onDestinationSelected: (index) async {
-            switch (index) {
-              case 0:
-                if (kIsWeb) break;
-                if (await _controller.canGoBack()) {
-                  await _controller.goBack();
-                }
-                break;
-              case 1:
-                await _reload();
-                break;
-              case 2:
-                await _controller.loadRequest(Uri.parse(_startUrl));
-                break;
-            }
-          },
         ),
+      ),
+      bottomNavigationBar: kIsWeb
+          ? NavigationBar(
+              height: 64,
+              selectedIndex: _selectedAppTab,
+              destinations: const [
+                NavigationDestination(
+                  icon: Icon(Icons.view_list),
+                  label: 'Лента',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.assignment),
+                  label: 'Мои',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.chat_bubble_outline),
+                  label: 'Чат',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.dashboard_outlined),
+                  label: 'Панель',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.person_outline),
+                  label: 'Профиль',
+                ),
+              ],
+              onDestinationSelected: _handleAppTabChange,
+            )
+          : null,
     );
 
     if (kIsWeb) {
