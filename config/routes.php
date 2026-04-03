@@ -10,6 +10,7 @@ use App\Controllers\BalanceController;
 use App\Controllers\ReviewController;
 use App\Controllers\ChatController;
 use App\Controllers\AdminController;
+use App\Controllers\CatalogController;
 use App\Middlewares\AuthMiddleware;
 use App\Middlewares\GuestMiddleware;
 use App\Middlewares\AdminMiddleware;
@@ -19,8 +20,15 @@ use App\Middlewares\PageAccessMiddleware;
 
 // Public
 $router->get('/', [HomeController::class, 'index']);
+$router->get('/help', [HomeController::class, 'help']);
+$router->get('/privacy', [HomeController::class, 'privacy']);
+$router->get('/terms', [HomeController::class, 'terms']);
+$router->get('/catalog', [CatalogController::class, 'index']);
+$router->get('/catalog/{category}', [CatalogController::class, 'specialists']);
 // Public API
 $router->get('/api/orders', [OrderController::class, 'apiIndex']);
+$router->get('/api/catalog/categories', [CatalogController::class, 'apiCategories']);
+$router->get('/api/specialists', [CatalogController::class, 'apiSpecialists']);
 $router->post('/api/auth/login', [AuthController::class, 'apiLogin']);
 $router->post('/api/auth/register', [AuthController::class, 'apiRegister']);
 
@@ -41,6 +49,8 @@ $router->group([AuthMiddleware::class], function ($router) {
     $router->get('/orders/edit', [OrderController::class, 'editSelect'], [[PageAccessMiddleware::class, 'orders']]);
     $router->get('/orders/create', [OrderController::class, 'create'], [[PageAccessMiddleware::class, 'orders_create']]);
     $router->post('/orders/create', [OrderController::class, 'store'], [[PageAccessMiddleware::class, 'orders_create']]);
+    $router->get('/catalog/{category}/hire/{freelancer}', [CatalogController::class, 'hire'], [[PageAccessMiddleware::class, 'orders_create']]);
+    $router->post('/catalog/hire', [OrderController::class, 'catalogHireStore'], [[PageAccessMiddleware::class, 'orders_create']]);
     $router->get('/orders/{id}/edit', [OrderController::class, 'edit'], [[PageAccessMiddleware::class, 'orders']]);
     $router->post('/orders/{id}/edit', [OrderController::class, 'update'], [[PageAccessMiddleware::class, 'orders']]);
     $router->get('/orders/{id}', [OrderController::class, 'show'], [[PageAccessMiddleware::class, 'orders']]);
@@ -104,6 +114,7 @@ $router->group([AuthMiddleware::class], function ($router) {
 // Admin panel (admin only)
 $router->group([AuthMiddleware::class, AdminMiddleware::class], function ($router) {
     $router->get('/admin', [AdminController::class, 'dashboard']);
+    $router->get('/admin/categories', [AdminController::class, 'categories']);
     $router->get('/admin/users', [AdminController::class, 'users']);
     $router->get('/admin/users/{id}', [AdminController::class, 'userEdit']);
     $router->post('/admin/users/{id}', [AdminController::class, 'userUpdate']);

@@ -6,10 +6,7 @@
     </div>
     <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32">
         <div class="text-center max-w-3xl mx-auto">
-            <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-brand-500/10 border border-brand-500/20 rounded-full mb-6">
-                <span class="w-2 h-2 bg-brand-400 rounded-full animate-pulse"></span>
-                <span class="text-brand-300 text-sm font-medium">Платформа с динамической ценой</span>
-            </div>
+            
             <h1 class="text-4xl md:text-6xl font-extrabold text-white leading-tight mb-6">
                 Назови свою цену,<br>
                 <span class="bg-gradient-to-r from-brand-400 to-emerald-300 bg-clip-text text-transparent">получи результат</span>
@@ -20,6 +17,9 @@
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
                 <a href="<?= url('register') ?>" class="px-8 py-3.5 bg-brand-500 text-white font-semibold rounded-xl hover:bg-brand-600 transition shadow-lg shadow-brand-500/25 text-center">
                     Начать нанимать
+                </a>
+                <a href="<?= url('catalog') ?>" class="px-8 py-3.5 bg-white/15 backdrop-blur text-white font-semibold rounded-xl hover:bg-white/25 transition border border-white/20 text-center">
+                    Каталог специалистов
                 </a>
                 <a href="<?= url('orders') ?>" class="px-8 py-3.5 bg-white/10 backdrop-blur text-white font-semibold rounded-xl hover:bg-white/20 transition border border-white/10 text-center">
                     Найти работу
@@ -119,6 +119,7 @@
         <p class="text-lg text-brand-100 mb-10 max-w-2xl mx-auto">Присоединяйтесь к тысячам заказчиков и фрилансеров, которые доверяют inWork честное и динамичное ценообразование.</p>
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
             <a href="<?= url('register') ?>" class="px-8 py-3.5 bg-white text-brand-700 font-semibold rounded-xl hover:bg-gray-50 transition shadow-lg text-center">Создать аккаунт бесплатно</a>
+            <a href="<?= url('catalog') ?>" class="px-8 py-3.5 bg-brand-500/30 text-white font-semibold rounded-xl hover:bg-brand-500/40 transition border border-white/30 text-center">Каталог мастеров</a>
             <a href="<?= url('orders') ?>" class="px-8 py-3.5 bg-brand-500 text-white font-semibold rounded-xl hover:bg-brand-400 transition border border-brand-400 text-center">Смотреть проекты</a>
         </div>
     </div>

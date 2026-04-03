@@ -60,7 +60,12 @@ class User extends Model
         $user = $this->find($userId);
         if (!$user) return null;
 
-        $user['rank'] = get_rank($user['completed_orders']);
+        $user['rank'] = get_rank((int) $user['completed_orders']);
+        if (($user['role'] ?? '') === 'freelancer') {
+            $user['specializations'] = (new FreelancerCategory())->getSlugsForUser($userId);
+        } else {
+            $user['specializations'] = [];
+        }
         return $user;
     }
 

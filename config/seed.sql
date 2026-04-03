@@ -19,6 +19,13 @@ INSERT INTO users (name, email, password, role, bio, balance, rating, completed_
 ('Нурсултан Жумабаев', 'nursultan@inwork.kz', @pass, 'freelancer', 'Мобильная разработка. Flutter, React Native.', 40000.00, 4.20, 23),
 ('Динара Ахметова', 'dinara@inwork.kz', @pass, 'freelancer', 'Копирайтер и переводчик. Тексты для бизнеса.', 15000.00, 3.90, 8);
 
+-- Каталожные специализации (электрик, сантехник, ремонт)
+INSERT INTO freelancer_categories (user_id, category) VALUES
+(3, 'electrician'),
+(4, 'plumber'),
+(5, 'repair'),
+(6, 'electrician');
+
 -- Тестовые заказы
 INSERT INTO orders (client_id, title, description, category, budget, deadline, status, created_at) VALUES
 (2, 'Разработать лендинг для стартапа', 'Нужен современный одностраничный сайт для стартапа в сфере EdTech в Алматы. Адаптивный дизайн, анимации, форма обратной связи. Дизайн-макет предоставлю в Figma.', 'web-development', 75000.00, DATE_ADD(CURDATE(), INTERVAL 14 DAY), 'open', NOW() - INTERVAL 2 HOUR),

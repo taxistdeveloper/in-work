@@ -50,6 +50,7 @@ class _RootShellState extends State<_RootShell> {
   late final ApiClient _client;
   late final AppSession _session;
   late final OrdersApi _ordersApi;
+  late final CatalogApi _catalogApi;
   late final ChatApi _chatApi;
   late final ProfileApi _profileApi;
   late final BalanceApi _balanceApi;
@@ -61,6 +62,7 @@ class _RootShellState extends State<_RootShell> {
     super.initState();
     _client = ApiClient();
     _ordersApi = OrdersApi(_client);
+    _catalogApi = CatalogApi(_client);
     _chatApi = ChatApi(_client);
     _profileApi = ProfileApi(_client);
     _balanceApi = BalanceApi(_client);
@@ -143,11 +145,11 @@ class _RootShellState extends State<_RootShell> {
   @override
   Widget build(BuildContext context) {
     final screens = <Widget>[
-      FeedScreen(api: _ordersApi),
+      FeedScreen(api: _ordersApi, session: _session, catalogApi: _catalogApi),
       MyOrdersScreen(api: _ordersApi),
       ChatListScreen(api: _chatApi),
       BalanceScreen(api: _balanceApi),
-      ProfileScreen(api: _profileApi),
+      ProfileScreen(api: _profileApi, catalogApi: _catalogApi),
     ];
 
     if (_session.loading) {

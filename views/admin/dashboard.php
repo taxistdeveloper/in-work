@@ -3,6 +3,17 @@ $statusLabels = ['open' => 'Открыт', 'in_progress' => 'В работе', '
 $roleLabels = ['client' => 'Заказчик', 'freelancer' => 'Исполнитель', 'admin' => 'Админ'];
 ?>
 
+<div class="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gray-100 bg-white px-5 py-4">
+    <div>
+        <p class="text-sm font-medium text-gray-900">Категории платформы</p>
+        <p class="text-xs text-gray-500 mt-0.5">Каталог (электрики, сантехника, ремонт) и рыночные направления из конфига</p>
+    </div>
+    <a href="<?= url('admin/categories') ?>" class="inline-flex items-center gap-2 rounded-xl bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 transition">
+        Смотреть категории
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+    </a>
+</div>
+
 <!-- Статистика -->
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
     <div class="bg-white rounded-2xl p-5 border border-gray-100">

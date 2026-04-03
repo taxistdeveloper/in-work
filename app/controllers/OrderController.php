@@ -9,6 +9,9 @@ use App\Models\Bid;
 use App\Models\Escrow;
 use App\Models\Review;
 use App\Models\Notification;
+use App\Models\User;
+use App\Models\Conversation;
+use App\Models\FreelancerCategory;
 use App\Services\EscrowService;
 
 class OrderController extends Controller
@@ -112,11 +115,16 @@ class OrderController extends Controller
         }
 
         $appConfig = require ROOT_PATH . '/config/app.php';
+        $categories = array_filter(
+            $appConfig['categories'],
+            static fn (string $label, string $slug): bool => category_mode($slug) === 'market',
+            ARRAY_FILTER_USE_BOTH
+        );
 
         $this->view('orders.edit', [
             'title'      => 'Редактировать заказ',
             'order'      => $order,
-            'categories' => $appConfig['categories'],
+            'categories' => $categories,
         ]);
     }
 
@@ -191,10 +199,15 @@ class OrderController extends Controller
         $this->requireAuth();
 
         $appConfig = require ROOT_PATH . '/config/app.php';
+        $categories = array_filter(
+            $appConfig['categories'],
+            static fn (string $label, string $slug): bool => category_mode($slug) === 'market',
+            ARRAY_FILTER_USE_BOTH
+        );
 
         $this->view('orders.create', [
             'title'      => 'Создать заказ',
-            'categories' => $appConfig['categories'],
+            'categories' => $categories,
         ]);
     }
 
@@ -226,6 +239,29 @@ class OrderController extends Controller
             $_SESSION['old_input'] = $data;
             $_SESSION['errors'] = $validator->firstErrors();
             $this->redirect(url('orders/create'));
+            return;
+        }
+
+        $category = (string) $data['category'];
+        if (! is_valid_category_slug($category)) {
+            flash('error', 'Неизвестная категория.');
+            $this->redirect(url('orders/create'));
+            return;
+        }
+
+        if (category_mode($category) === 'catalog') {
+            $freelancerId = (int) ($data['freelancer_id'] ?? 0);
+            if ($freelancerId <= 0) {
+                flash('error', 'Для этой категории выберите исполнителя в каталоге (создание через приложение).');
+                $this->redirect(url('orders/create'));
+                return;
+            }
+            if ((float) $data['budget'] < 100) {
+                flash('error', 'Минимальный бюджет для найма из каталога — 100 ₸.');
+                $this->redirect(url('orders/create'));
+                return;
+            }
+            $this->createCatalogOrderWeb($data, $freelancerId);
             return;
         }
 
@@ -513,8 +549,17 @@ class OrderController extends Controller
                 $errors[$field] = 'Поле обязательно';
             }
         }
-        if ((float) ($data['budget'] ?? 0) < 5) {
-            $errors['budget'] = 'Бюджет должен быть не менее 5';
+        $category = trim((string) ($data['category'] ?? ''));
+        if ($category !== '' && ! is_valid_category_slug($category)) {
+            $errors['category'] = 'Неизвестная категория';
+        }
+
+        $mode = $category !== '' ? category_mode($category) : 'market';
+        $minBudget = $mode === 'catalog' ? 100 : 5;
+        if ((float) ($data['budget'] ?? 0) < $minBudget) {
+            $errors['budget'] = $mode === 'catalog'
+                ? 'Бюджет для найма из каталога не менее 100'
+                : 'Бюджет должен быть не менее 5';
         }
         if (mb_strlen((string) ($data['title'] ?? '')) < 5) {
             $errors['title'] = 'Название минимум 5 символов';
@@ -522,8 +567,25 @@ class OrderController extends Controller
         if (mb_strlen((string) ($data['description'] ?? '')) < 20) {
             $errors['description'] = 'Описание минимум 20 символов';
         }
+
+        $freelancerId = (int) ($data['freelancer_id'] ?? 0);
+        if ($mode === 'catalog' && $freelancerId <= 0) {
+            $errors['freelancer_id'] = 'Выберите исполнителя из каталога';
+        }
+
         if ($errors !== []) {
             $this->jsonError('Ошибка валидации', 422, $errors, 'VALIDATION_ERROR');
+            return;
+        }
+
+        if ($mode === 'catalog') {
+            $result = $this->hireFromCatalog(user_id(), $data, $freelancerId);
+            if (!$result['ok']) {
+                $this->jsonError($result['message'], $result['http'], $result['errors'] ?? [], $result['code'] ?? 'ERROR');
+                return;
+            }
+            $order = $this->orderModel->getOrderWithClient((int) $result['order_id']);
+            $this->jsonSuccess(['order' => $this->mapOrderForApi($order ?: [])], 'Исполнитель назначен, заказ в работе', 201);
             return;
         }
 
@@ -539,6 +601,151 @@ class OrderController extends Controller
 
         $order = $this->orderModel->find((int) $orderId);
         $this->jsonSuccess(['order' => $this->mapOrderForApi($order ?: [])], 'Заказ создан', 201);
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array{ok: true, order_id: int}|array{ok: false, message: string, http: int, code: string, errors?: array<string, string>}
+     */
+    private function hireFromCatalog(int $clientId, array $data, int $freelancerId): array
+    {
+        $category = (string) $data['category'];
+        $userModel = new User();
+        $fl = $userModel->find($freelancerId);
+        if (!$fl || ($fl['role'] ?? '') !== 'freelancer') {
+            return ['ok' => false, 'message' => 'Исполнитель не найден', 'http' => 404, 'code' => 'NOT_FOUND'];
+        }
+        if ((int) $fl['id'] === $clientId) {
+            return ['ok' => false, 'message' => 'Нельзя нанять самого себя', 'http' => 422, 'code' => 'INVALID'];
+        }
+        if (!(new FreelancerCategory())->userHasCategory($freelancerId, $category)) {
+            return [
+                'ok'       => false,
+                'message'  => 'Исполнитель не указал эту специализацию',
+                'http'     => 422,
+                'code'     => 'FREELANCER_CATEGORY_MISMATCH',
+                'errors'   => ['freelancer_id' => 'Не подходит для категории'],
+            ];
+        }
+
+        $amount = (float) $data['budget'];
+        $client = $userModel->find($clientId);
+        if ((float) $client['balance'] < $amount) {
+            return ['ok' => false, 'message' => 'Недостаточно средств. Пополните баланс', 'http' => 422, 'code' => 'INSUFFICIENT_FUNDS'];
+        }
+
+        $orderId = $this->orderModel->create([
+            'client_id'     => $clientId,
+            'freelancer_id' => $freelancerId,
+            'title'         => $data['title'],
+            'description'   => $data['description'],
+            'category'      => $category,
+            'budget'        => $amount,
+            'final_price'   => $amount,
+            'deadline'      => $data['deadline'],
+            'status'        => 'in_progress',
+        ]);
+
+        $escrow = new EscrowService();
+        if (!$escrow->holdFunds((int) $orderId, $clientId, $freelancerId, $amount)) {
+            $this->orderModel->destroy((int) $orderId);
+
+            return ['ok' => false, 'message' => 'Ошибка резервирования средств', 'http' => 500, 'code' => 'ESCROW_ERROR'];
+        }
+
+        $convModel = new Conversation();
+        $convModel->findOrCreate($clientId, $freelancerId, (int) $orderId);
+
+        $notifModel = new Notification();
+        $notifModel->notify(
+            $freelancerId,
+            'catalog_hire',
+            'Вас наняли по заказу «' . $data['title'] . '»',
+            '/orders/' . $orderId
+        );
+
+        $_SESSION['user'] = $userModel->getSessionData($clientId);
+
+        return ['ok' => true, 'order_id' => (int) $orderId];
+    }
+
+    /** @param array<string, mixed> $data */
+    private function createCatalogOrderWeb(array $data, int $freelancerId): void
+    {
+        $result = $this->hireFromCatalog((int) user_id(), $data, $freelancerId);
+        if (!$result['ok']) {
+            flash('error', $result['message']);
+            $this->redirect(url('orders/create'));
+            return;
+        }
+        flash('success', 'Исполнитель назначен, средства зарезервированы на эскроу.');
+        $this->redirect(url('orders/' . $result['order_id']));
+    }
+
+    /** Веб: отправка формы найма из каталога (POST /catalog/hire). */
+    public function catalogHireStore(): void
+    {
+        $this->requireAuth();
+        if (user_role() !== 'client') {
+            flash('error', 'Только заказчик может нанять исполнителя.');
+            $this->redirect(url('catalog'));
+            return;
+        }
+        if (! $this->validateCsrf()) {
+            flash('error', 'Неверный токен безопасности.');
+            $this->redirect(url('catalog'));
+            return;
+        }
+
+        $data = $this->allInput();
+        $category = trim((string) ($data['category'] ?? ''));
+        $freelancerId = (int) ($data['freelancer_id'] ?? 0);
+
+        $errors = [];
+        foreach (['title', 'description', 'category', 'budget', 'deadline'] as $f) {
+            if (trim((string) ($data[$f] ?? '')) === '') {
+                $errors[$f] = 'Поле обязательно';
+            }
+        }
+        if ($category === '' || ! is_valid_category_slug($category) || category_mode($category) !== 'catalog') {
+            $errors['category'] = 'Некорректная категория';
+        }
+        if ((float) ($data['budget'] ?? 0) < 100) {
+            $errors['budget'] = 'Минимум 100 ₸ для найма из каталога';
+        }
+        if (mb_strlen((string) ($data['title'] ?? '')) < 5) {
+            $errors['title'] = 'Минимум 5 символов';
+        }
+        if (mb_strlen((string) ($data['description'] ?? '')) < 20) {
+            $errors['description'] = 'Минимум 20 символов';
+        }
+        if ($freelancerId <= 0) {
+            $errors['freelancer_id'] = 'Не указан исполнитель';
+        }
+
+        $deadlineTs = strtotime((string) ($data['deadline'] ?? ''));
+        $minTs = strtotime('tomorrow midnight');
+        if ($deadlineTs === false || $deadlineTs < $minTs) {
+            $errors['deadline'] = 'Дедлайн не раньше завтрашнего дня';
+        }
+
+        if ($errors !== []) {
+            $_SESSION['errors'] = $errors;
+            $_SESSION['old_input'] = $data;
+            $this->redirect(url('catalog/' . $category . '/hire/' . $freelancerId));
+            return;
+        }
+
+        $result = $this->hireFromCatalog((int) user_id(), $data, $freelancerId);
+        if (! $result['ok']) {
+            flash('error', $result['message']);
+            $_SESSION['old_input'] = $data;
+            $this->redirect(url('catalog/' . $category . '/hire/' . $freelancerId));
+            return;
+        }
+
+        flash('success', 'Исполнитель назначен, средства зарезервированы на эскроу.');
+        $this->redirect(url('orders/' . $result['order_id']));
     }
 
     public function apiUpdate(string $id): void

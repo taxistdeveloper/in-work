@@ -13,6 +13,15 @@ class Order extends Model
         $where = "status = 'open'";
         $params = [];
 
+        $catalogSlugs = catalog_category_slugs();
+        if ($catalogSlugs !== []) {
+            $placeholders = implode(', ', array_fill(0, count($catalogSlugs), '?'));
+            $where .= " AND category NOT IN ({$placeholders})";
+            foreach ($catalogSlugs as $slug) {
+                $params[] = $slug;
+            }
+        }
+
         if ($category) {
             $where .= " AND category = ?";
             $params[] = $category;

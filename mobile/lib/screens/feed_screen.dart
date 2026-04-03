@@ -1,13 +1,22 @@
 import 'package:flutter/material.dart';
 
 import '../api/app_api.dart';
+import '../app_session.dart';
 import '../models/order.dart';
 import '../ui/components/components.dart';
 import 'order_detail_screen.dart';
+import 'specialists_screen.dart';
 
 class FeedScreen extends StatefulWidget {
-  const FeedScreen({super.key, required this.api});
+  const FeedScreen({
+    super.key,
+    required this.api,
+    required this.session,
+    required this.catalogApi,
+  });
   final OrdersApi api;
+  final AppSession session;
+  final CatalogApi catalogApi;
 
   @override
   State<FeedScreen> createState() => _FeedScreenState();
@@ -24,6 +33,9 @@ class _FeedScreenState extends State<FeedScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final role = widget.session.user?['role']?.toString();
+    final isClient = role == 'client';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -34,7 +46,27 @@ class _FeedScreenState extends State<FeedScreen> {
             children: [
               Text('Лента заказов', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
-              Text('Открытые проекты для исполнителей', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600)),
+              Text(
+                isClient ? 'Рыночные заказы (отклики) или найм из каталога' : 'Открытые проекты для исполнителей',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
+              ),
+              if (isClient) ...[
+                const SizedBox(height: 12),
+                FilledButton.tonalIcon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => SpecialistsScreen(
+                          catalogApi: widget.catalogApi,
+                          ordersApi: widget.api,
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.people_outline),
+                  label: const Text('Каталог специалистов'),
+                ),
+              ],
             ],
           ),
         ),

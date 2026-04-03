@@ -33,6 +33,26 @@
                           placeholder="Расскажите о себе..."><?= e($profile['bio'] ?? '') ?></textarea>
             </div>
 
+            <?php if (($profile['role'] ?? '') === 'freelancer' && !empty($catalog_specs)): ?>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Специализации в каталоге</label>
+                <p class="text-xs text-gray-500 mb-3">Отметьте направления, чтобы заказчики нашли вас в <a href="<?= url('catalog') ?>" class="text-brand-600 hover:underline">каталоге</a>.</p>
+                <div class="space-y-2 rounded-xl border border-gray-100 p-4 bg-gray-50/80">
+                    <?php
+                    $current = $profile['specializations'] ?? [];
+                    foreach ($catalog_specs as $slug => $lbl):
+                    ?>
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" name="specializations[]" value="<?= e($slug) ?>"
+                                   class="rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+                                   <?= in_array($slug, $current, true) ? 'checked' : '' ?>>
+                            <span class="text-sm text-gray-800"><?= e($lbl) ?></span>
+                        </label>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+
             <button type="submit" class="w-full py-3 bg-brand-600 text-white font-semibold rounded-xl hover:bg-brand-700 transition">
                 Сохранить изменения
             </button>

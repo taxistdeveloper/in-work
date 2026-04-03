@@ -6,6 +6,7 @@ use Core\Controller;
 use Core\Validator;
 use App\Models\User;
 use App\Models\Review;
+use App\Models\FreelancerCategory;
 
 class ProfileController extends Controller
 {
@@ -44,9 +45,18 @@ class ProfileController extends Controller
 
         $profile = $this->userModel->getProfile(user_id());
 
+        $app = require ROOT_PATH . '/config/app.php';
+        $catalogSpecs = [];
+        foreach ($app['categories'] as $slug => $label) {
+            if (($app['category_modes'][$slug] ?? '') === 'catalog') {
+                $catalogSpecs[$slug] = $label;
+            }
+        }
+
         $this->view('profile.edit', [
-            'title'   => 'Редактировать профиль',
-            'profile' => $profile,
+            'title'            => 'Редактировать профиль',
+            'profile'          => $profile,
+            'catalog_specs'    => $catalogSpecs,
         ]);
     }
 
@@ -80,6 +90,15 @@ class ProfileController extends Controller
         ];
 
         $this->userModel->update(user_id(), $updateData);
+
+        if (($this->currentUser()['role'] ?? '') === 'freelancer') {
+            $specs = $_POST['specializations'] ?? [];
+            if (! is_array($specs)) {
+                $specs = [];
+            }
+            (new FreelancerCategory())->syncForUser(user_id(), array_map('strval', $specs));
+        }
+
         $_SESSION['user'] = $this->userModel->getSessionData(user_id());
 
         flash('success', 'Профиль обновлён!');
@@ -123,6 +142,17 @@ class ProfileController extends Controller
             'bio' => (string) ($data['bio'] ?? ''),
         ];
         $this->userModel->update(user_id(), $updateData);
+
+        $specRaw = $data['specializations'] ?? null;
+        if (($this->currentUser()['role'] ?? '') === 'freelancer' && $specRaw !== null) {
+            $list = is_array($specRaw) ? $specRaw : json_decode((string) $specRaw, true);
+            if (! is_array($list)) {
+                $list = [];
+            }
+            $list = array_values(array_filter(array_map('strval', $list)));
+            (new FreelancerCategory())->syncForUser(user_id(), $list);
+        }
+
         $_SESSION['user'] = $this->userModel->getSessionData(user_id());
         $profile = $this->userModel->getProfile(user_id());
         unset($profile['password']);

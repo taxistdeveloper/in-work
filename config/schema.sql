@@ -20,6 +20,15 @@ CREATE TABLE users (
     INDEX idx_users_completed (completed_orders)
 ) ENGINE=InnoDB;
 
+-- Категории исполнителей (каталожный режим)
+CREATE TABLE freelancer_categories (
+    user_id INT UNSIGNED NOT NULL,
+    category VARCHAR(50) NOT NULL,
+    PRIMARY KEY (user_id, category),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_fc_category (category)
+) ENGINE=InnoDB;
+
 -- Orders
 CREATE TABLE orders (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

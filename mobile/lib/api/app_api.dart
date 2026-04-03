@@ -73,20 +73,26 @@ class OrdersApi {
     });
   }
 
-  Future<void> createOrder({
+  Future<Map<String, dynamic>> createOrder({
     required String title,
     required String description,
     required String category,
     required double budget,
     required String deadline,
+    int? freelancerId,
   }) async {
-    await _client.postJson('api/orders', {
+    final body = <String, dynamic>{
       'title': title,
       'description': description,
       'category': category,
       'budget': budget,
       'deadline': deadline,
-    });
+    };
+    if (freelancerId != null) {
+      body['freelancer_id'] = freelancerId;
+    }
+    final json = await _client.postJson('api/orders', body);
+    return json['data'] as Map<String, dynamic>? ?? {};
   }
 
   Future<void> updateOrder(
@@ -139,9 +145,42 @@ class ProfileApi {
     return json['data']['profile'] as Map<String, dynamic>;
   }
 
-  Future<Map<String, dynamic>> update(String name, String bio) async {
-    final json = await _client.postJson('api/profile', {'name': name, 'bio': bio});
+  Future<Map<String, dynamic>> update(
+    String name,
+    String bio, {
+    List<String>? specializations,
+  }) async {
+    final body = <String, dynamic>{'name': name, 'bio': bio};
+    if (specializations != null) {
+      body['specializations'] = specializations;
+    }
+    final json = await _client.postJson('api/profile', body);
     return json['data']['profile'] as Map<String, dynamic>;
+  }
+}
+
+class CatalogApi {
+  CatalogApi(this._client);
+  final ApiClient _client;
+
+  Future<List<Map<String, dynamic>>> fetchCategories() async {
+    final json = await _client.getJson('api/catalog/categories');
+    final list = json['data']?['categories'] as List<dynamic>? ?? [];
+    return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+
+  Future<Map<String, dynamic>> fetchSpecialists({
+    required String category,
+    String sort = 'score',
+    int page = 1,
+  }) async {
+    final q = Uri(queryParameters: {
+      'category': category,
+      'sort': sort,
+      'page': page.toString(),
+    }).query;
+    final json = await _client.getJson('api/specialists?$q');
+    return json['data'] as Map<String, dynamic>? ?? {};
   }
 }
 

@@ -19,6 +19,7 @@ if (is_logged_in()) {
 
             <!-- Десктоп навигация -->
             <div class="hidden md:flex items-center gap-1">
+                <a href="<?= url('catalog') ?>" class="px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition">Каталог</a>
                 <?php if (!is_logged_in() || user_role() !== 'client'): ?>
                     <a href="<?= url('orders') ?>" class="px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition">Лента заказов</a>
                 <?php endif; ?>

@@ -13,26 +13,26 @@
             <div>
                 <h4 class="text-sm font-semibold text-gray-900 mb-3">Платформа</h4>
                 <ul class="space-y-2">
+                    <li><a href="<?= url('catalog') ?>" class="text-sm text-gray-500 hover:text-brand-600 transition">Каталог специалистов</a></li>
                     <li><a href="<?= (is_logged_in() && user_role() === 'client') ? url('my-orders') : url('orders') ?>" class="text-sm text-gray-500 hover:text-brand-600 transition"><?= (is_logged_in() && user_role() === 'client') ? 'Мои заказы' : 'Лента заказов' ?></a></li>
                     <li><a href="<?= url('register') ?>" class="text-sm text-gray-500 hover:text-brand-600 transition">Стать фрилансером</a></li>
-                    <li><a href="<?= url('register') ?>" class="text-sm text-gray-500 hover:text-brand-600 transition">Найти специалиста</a></li>
                 </ul>
             </div>
             <div>
-                <h4 class="text-sm font-semibold text-gray-900 mb-3">Категории</h4>
+                <h4 class="text-sm font-semibold text-gray-900 mb-3">Каталог</h4>
                 <ul class="space-y-2">
-                    <li><a href="#" class="text-sm text-gray-500 hover:text-brand-600 transition">Веб-разработка</a></li>
-                    <li><a href="#" class="text-sm text-gray-500 hover:text-brand-600 transition">Дизайн</a></li>
-                    <li><a href="#" class="text-sm text-gray-500 hover:text-brand-600 transition">Маркетинг</a></li>
-                    <li><a href="#" class="text-sm text-gray-500 hover:text-brand-600 transition">Тексты и переводы</a></li>
+                    <li><a href="<?= url('catalog/electrician') ?>" class="text-sm text-gray-500 hover:text-brand-600 transition">Электрики</a></li>
+                    <li><a href="<?= url('catalog/plumber') ?>" class="text-sm text-gray-500 hover:text-brand-600 transition">Сантехника</a></li>
+                    <li><a href="<?= url('catalog/repair') ?>" class="text-sm text-gray-500 hover:text-brand-600 transition">Ремонт</a></li>
+                    <li><a href="<?= url('orders') ?>?category=web-development" class="text-sm text-gray-500 hover:text-brand-600 transition">Веб-разработка (рынок)</a></li>
                 </ul>
             </div>
             <div>
                 <h4 class="text-sm font-semibold text-gray-900 mb-3">Поддержка</h4>
                 <ul class="space-y-2">
-                    <li><a href="#" class="text-sm text-gray-500 hover:text-brand-600 transition">Центр помощи</a></li>
-                    <li><a href="#" class="text-sm text-gray-500 hover:text-brand-600 transition">Условия использования</a></li>
-                    <li><a href="#" class="text-sm text-gray-500 hover:text-brand-600 transition">Политика конфиденциальности</a></li>
+                    <li><a href="<?= url('help') ?>" class="text-sm text-gray-500 hover:text-brand-600 transition">Центр помощи</a></li>
+                    <li><a href="<?= url('terms') ?>" class="text-sm text-gray-500 hover:text-brand-600 transition">Условия использования</a></li>
+                    <li><a href="<?= url('privacy') ?>" class="text-sm text-gray-500 hover:text-brand-600 transition">Политика конфиденциальности</a></li>
                 </ul>
             </div>
         </div>

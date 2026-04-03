@@ -48,6 +48,56 @@ class AdminController extends Controller
         ]);
     }
 
+    /** Справочник категорий из config (рынок / каталог) и статистика по БД. */
+    public function categories(): void
+    {
+        $app = require ROOT_PATH . '/config/app.php';
+        $modes = $app['category_modes'] ?? [];
+
+        $fcCounts = [];
+        try {
+            $rows = $this->db->fetchAll('SELECT category, COUNT(*) AS cnt FROM freelancer_categories GROUP BY category');
+            foreach ($rows as $r) {
+                $fcCounts[$r['category']] = (int) $r['cnt'];
+            }
+        } catch (\Throwable) {
+            // таблица ещё не создана
+        }
+
+        $orderCounts = [];
+        $ordRows = $this->db->fetchAll('SELECT category, COUNT(*) AS cnt FROM orders GROUP BY category');
+        foreach ($ordRows as $r) {
+            $orderCounts[$r['category']] = (int) $r['cnt'];
+        }
+
+        $rows = [];
+        foreach ($app['categories'] as $slug => $label) {
+            $isCatalog = ($modes[$slug] ?? '') === 'catalog';
+            $rows[] = [
+                'slug'                   => $slug,
+                'label'                  => $label,
+                'mode'                   => $isCatalog ? 'catalog' : 'market',
+                'freelancers_in_catalog' => $fcCounts[$slug] ?? 0,
+                'orders_total'           => $orderCounts[$slug] ?? 0,
+            ];
+        }
+
+        usort($rows, static function (array $a, array $b): int {
+            if ($a['mode'] !== $b['mode']) {
+                return $a['mode'] === 'catalog' ? -1 : 1;
+            }
+            return strcasecmp($a['label'], $b['label']);
+        });
+
+        $catalogCount = count(array_filter($rows, static fn (array $r): bool => $r['mode'] === 'catalog'));
+
+        $this->view('admin.categories', [
+            'title'         => 'Категории платформы',
+            'category_rows' => $rows,
+            'catalog_total' => $catalogCount,
+        ]);
+    }
+
     public function users(): void
     {
         $page = max(1, (int) ($this->input('page', 1)));

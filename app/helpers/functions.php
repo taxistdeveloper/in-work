@@ -155,3 +155,34 @@ function paginate_links(int $currentPage, int $totalPages, string $baseUrl): str
     $html .= '</nav>';
     return $html;
 }
+
+/** @return array<string, string> */
+function app_categories(): array
+{
+    $app = require ROOT_PATH . '/config/app.php';
+
+    return $app['categories'] ?? [];
+}
+
+/** market | catalog */
+function category_mode(string $categorySlug): string
+{
+    $app = require ROOT_PATH . '/config/app.php';
+    $modes = $app['category_modes'] ?? [];
+
+    return ($modes[$categorySlug] ?? '') === 'catalog' ? 'catalog' : 'market';
+}
+
+/** @return list<string> */
+function catalog_category_slugs(): array
+{
+    $app = require ROOT_PATH . '/config/app.php';
+    $modes = $app['category_modes'] ?? [];
+
+    return array_keys(array_filter($modes, static fn ($m) => $m === 'catalog'));
+}
+
+function is_valid_category_slug(string $slug): bool
+{
+    return array_key_exists($slug, app_categories());
+}

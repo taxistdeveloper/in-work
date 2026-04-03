@@ -34,6 +34,17 @@ return [
         'music'              => 'Музыка и аудио',
         'data'               => 'Данные и аналитика',
         'admin'              => 'Администрирование',
+        'electrician'        => 'Электрики',
+        'plumber'            => 'Сантехника',
+        'repair'             => 'Ремонт и отделка',
         'other'              => 'Другое',
+    ],
+    /**
+     * Режим категории: market — открытые заказы и отклики; catalog — выбор исполнителя из каталога.
+     */
+    'category_modes'    => [
+        'electrician' => 'catalog',
+        'plumber'     => 'catalog',
+        'repair'      => 'catalog',
     ],
 ];

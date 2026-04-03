@@ -17,4 +17,25 @@ class HomeController extends Controller
             'orders' => $recentOrders['items'],
         ]);
     }
+
+    public function help(): void
+    {
+        $this->view('pages.help', [
+            'title' => 'Центр помощи',
+        ]);
+    }
+
+    public function privacy(): void
+    {
+        $this->view('pages.privacy', [
+            'title' => 'Политика конфиденциальности',
+        ]);
+    }
+
+    public function terms(): void
+    {
+        $this->view('pages.terms', [
+            'title' => 'Условия использования',
+        ]);
+    }
 }
